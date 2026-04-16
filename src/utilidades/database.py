@@ -1,12 +1,12 @@
 import os
 from dotenv import load_dotenv
-import mysql.connector  # Librería MySQL
+import mysql.connector  # MySQL library
 
-# Cargar variables de entorno
+# Load environment variables
 load_dotenv()
 
 def conexion_basedatos():
-    """Establece y devuelve la conexión a la base de datos."""
+    """Create and return the database connection."""
     config = {
         'user': os.getenv('DB_USER'),
         'password': os.getenv('DB_PASSWORD'),
@@ -18,7 +18,7 @@ def conexion_basedatos():
 
 
 def comida_basedatos():
-    """Obtiene los datos de la tabla 'comida' y los devuelve como una lista de diccionarios."""
+    """Fetch food rows from the `comida` table as a list of dictionaries."""
 
     cnx = conexion_basedatos()
     cursor = cnx.cursor(dictionary=True)
@@ -34,12 +34,12 @@ def comida_basedatos():
 
 
 def sujetos_basedatos():
-    """Obtiene los sujetos de la base de datos junto con sus gustos, disgustos y alergias."""
+    """Fetch subjects together with their likes, dislikes, and allergies."""
 
     cnx = conexion_basedatos()
     cursor = cnx.cursor(dictionary=True)
 
-    # Obtener la información básica de los sujetos
+    # Fetch the basic subject information
     query_sujetos = """
     SELECT sp.id AS sujeto_id, sp.edad, sc.calorias 
     FROM sujetos sp
@@ -48,7 +48,7 @@ def sujetos_basedatos():
     cursor.execute(query_sujetos)
     sujetos = cursor.fetchall()
 
-    # Obtener gustos, disgustos y alergias
+    # Fetch likes, dislikes, and allergies
     query_gustos = "SELECT sujeto_id, grupo FROM sujetos_gustos"
     query_disgustos = "SELECT sujeto_id, grupo FROM sujetos_disgustos"
     query_alergias = "SELECT sujeto_id, grupo FROM sujetos_alergias"
@@ -62,7 +62,7 @@ def sujetos_basedatos():
     cursor.execute(query_alergias)
     alergias = cursor.fetchall()
 
-    # Procesar y estructurar la información
+    # Build the output structure
     sujetos_dict = {}
     for sujeto in sujetos:
         sujeto_id = sujeto["sujeto_id"]
@@ -74,15 +74,15 @@ def sujetos_basedatos():
             "alergias": []
         }
 
-    # Asignar gustos a cada sujeto
+    # Attach likes to each subject
     for gusto in gustos:
         sujetos_dict[gusto["sujeto_id"]]["gustos"].append(gusto["grupo"])
 
-    # Asignar disgustos a cada sujeto
+    # Attach dislikes to each subject
     for disgusto in disgustos:
         sujetos_dict[disgusto["sujeto_id"]]["disgustos"].append(disgusto["grupo"])
 
-    # Asignar alergias a cada sujeto
+    # Attach allergies to each subject
     for alergia in alergias:
         sujetos_dict[alergia["sujeto_id"]]["alergias"].append(alergia["grupo"])
 

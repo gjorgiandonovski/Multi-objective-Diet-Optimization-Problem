@@ -1,12 +1,20 @@
-# funciones_auxiliares.py
+# helper functions
 
 from src.utilidades.database import comida_basedatos
 from src.utilidades.constantes import GruposComida, DIAS_SEMANA, COMIDAS
 
-comida_bd = comida_basedatos()
+comida_bd = None
+
+
+def obtener_comida_bd():
+    """Load food data from the database only when needed."""
+    global comida_bd
+    if comida_bd is None:
+        comida_bd = comida_basedatos()
+    return comida_bd
 
 def calculo_macronutrientes(proteinas, carbohidratos, grasas):
-    """Calcula el porcentaje de calorias provenientes de cada macronutriente."""
+    """Calculate the percentage of calories coming from each macronutrient."""
 
     calorias_proteinas = proteinas * 4
     calorias_carbohidratos = carbohidratos * 4
@@ -21,95 +29,102 @@ def calculo_macronutrientes(proteinas, carbohidratos, grasas):
     return porcentaje_proteinas, porcentaje_carbohidratos, porcentaje_grasas
 
 
-def filtrar_comida(comida_bd, tipo, edad):
-    """Filtra los alimentos segun el tipo de comida y la edad del usuario."""
+def filtrar_comida(comida_bd=None, tipo=None, edad=None):
+    """Filter foods by meal type and user age."""
+    if comida_bd is None:
+        comida_bd = obtener_comida_bd()
+    if tipo is None or edad is None:
+        raise ValueError("`tipo` and `edad` are required.")
 
-    match tipo:
-        case "almuerzo_cena":
-            return [
-                i for i, item in enumerate(comida_bd) if not item["grupo"].startswith(
-                    (
-                        GruposComida.Frutas.JUGOS_DE_FRUTAS[0],  # "FC"
-                        GruposComida.Frutas.ZUMOS[0],  # "FE"
-                        GruposComida.Bebidas.BEBIDAS[0],  # "P"
-                        GruposComida.Alcohol.ALCOHOL[0],  # "Q"
-                        GruposComida.Lacteos.LecheVaca.LECHE_VACA[0],  # "BA"
-                        GruposComida.Lacteos.BEBIDAS_LACTEAS[0],  # "BH"
-                        GruposComida.Bebidas.BebidasEnPolvoEsenciasInfusiones.BEBIDAS_EN_POLVO_ESENCIAS_INFUSIONES[0],  # "PA"
-                        GruposComida.Azucares.AZUCARES[0],  # "S"
-                        GruposComida.Cereales.CEREALES[0]  # "A"
-                    )
-                ) or item["grupo"] in {
-                    GruposComida.Cereales.ARROZ[0],  # "AC"
-                    GruposComida.Cereales.PASTA[0],  # "AD"
-                    GruposComida.Cereales.PIZZAS[0],  # "AE"
-                    GruposComida.Cereales.PANES[0]  # "AF"
-                }
-            ]
-        
-        case "bebidas":
-            bebidas = [
+    if tipo == "almuerzo_cena":
+        return [
+            i for i, item in enumerate(comida_bd) if not item["grupo"].startswith(
+                (
+                    GruposComida.Frutas.JUGOS_DE_FRUTAS[0],  # "FC"
+                    GruposComida.Frutas.ZUMOS[0],  # "FE"
+                    GruposComida.Bebidas.BEBIDAS[0],  # "P"
+                    GruposComida.Alcohol.ALCOHOL[0],  # "Q"
+                    GruposComida.Lacteos.LecheVaca.LECHE_VACA[0],  # "BA"
+                    GruposComida.Lacteos.BEBIDAS_LACTEAS[0],  # "BH"
+                    GruposComida.Bebidas.BebidasEnPolvoEsenciasInfusiones.BEBIDAS_EN_POLVO_ESENCIAS_INFUSIONES[0],  # "PA"
+                    GruposComida.Azucares.AZUCARES[0],  # "S"
+                    GruposComida.Cereales.CEREALES[0],  # "A"
+                )
+            ) or item["grupo"] in {
+                GruposComida.Cereales.ARROZ[0],  # "AC"
+                GruposComida.Cereales.PASTA[0],  # "AD"
+                GruposComida.Cereales.PIZZAS[0],  # "AE"
+                GruposComida.Cereales.PANES[0],  # "AF"
+            }
+        ]
+
+    if tipo == "bebidas":
+        bebidas = [
+            i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
+                (
+                    GruposComida.Bebidas.BEBIDAS[0],  # "P"
+                    GruposComida.Frutas.JUGOS_DE_FRUTAS[0],  # "FC"
+                    GruposComida.Frutas.ZUMOS[0],  # "FE"
+                )
+            ) and not item["grupo"].startswith(
+                GruposComida.Bebidas.BebidasEnPolvoEsenciasInfusiones.BEBIDAS_EN_POLVO_ESENCIAS_INFUSIONES[0]  # "PA"
+            )
+        ]
+        if edad >= 18:
+            bebidas_alcoholicas = [
                 i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
-                    (
-                        GruposComida.Bebidas.BEBIDAS[0],  # "P"
-                        GruposComida.Frutas.JUGOS_DE_FRUTAS[0],  # "FC"
-                        GruposComida.Frutas.ZUMOS[0]  # "FE"
-                    )
-                ) and not item["grupo"].startswith(
-                    GruposComida.Bebidas.BebidasEnPolvoEsenciasInfusiones.BEBIDAS_EN_POLVO_ESENCIAS_INFUSIONES[0]  # "PA"
+                    GruposComida.Alcohol.ALCOHOL[0]  # "Q"
                 )
             ]
-            if edad >= 18:
-                bebidas_alcoholicas = [
-                    i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
-                        GruposComida.Alcohol.ALCOHOL[0]  # "Q"
-                    )
-                ]
-                bebidas.extend(bebidas_alcoholicas)
-            return bebidas
-        
-        case "desayuno":
-            return [
-                i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
+            bebidas.extend(bebidas_alcoholicas)
+        return bebidas
+
+    if tipo == "desayuno":
+        return [
+            i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
                 (
                     GruposComida.Cereales.CEREALES[0],  # "A"
                     GruposComida.Huevos.HUEVOS[0],  # "C"
                     GruposComida.Frutas.FRUTAS_GENERALES[0],  # "FA"
-                    GruposComida.Carne.CarneGeneral.BACON[0]  # "MAA"
+                    GruposComida.Carne.CarneGeneral.BACON[0],  # "MAA"
                 )
-                ) and item["grupo"] not in {
-                    GruposComida.Cereales.ARROZ[0],  # "AC"
-                    GruposComida.Cereales.PASTA[0],  # "AD"
-                    GruposComida.Cereales.PIZZAS[0]  # "AE"
-                }
-            ]
-        
-        case "bebida_desayuno":
-            return [
-                i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
-                    (
-                        GruposComida.Lacteos.LecheVaca.LECHE_VACA[0],  # "BA"
-                        GruposComida.Lacteos.BEBIDAS_LACTEAS[0],  # "BH"
-                        GruposComida.Bebidas.BebidasEnPolvoEsenciasInfusiones.BEBIDAS_EN_POLVO_ESENCIAS_INFUSIONES[0],  # "PA"
-                        GruposComida.Frutas.ZUMOS[0],  # "FE"
-                        GruposComida.Frutas.JUGOS_DE_FRUTAS[0]  # "FC"
-                    )
+            ) and item["grupo"] not in {
+                GruposComida.Cereales.ARROZ[0],  # "AC"
+                GruposComida.Cereales.PASTA[0],  # "AD"
+                GruposComida.Cereales.PIZZAS[0],  # "AE"
+            }
+        ]
+
+    if tipo == "bebida_desayuno":
+        return [
+            i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
+                (
+                    GruposComida.Lacteos.LecheVaca.LECHE_VACA[0],  # "BA"
+                    GruposComida.Lacteos.BEBIDAS_LACTEAS[0],  # "BH"
+                    GruposComida.Bebidas.BebidasEnPolvoEsenciasInfusiones.BEBIDAS_EN_POLVO_ESENCIAS_INFUSIONES[0],  # "PA"
+                    GruposComida.Frutas.ZUMOS[0],  # "FE"
+                    GruposComida.Frutas.JUGOS_DE_FRUTAS[0],  # "FC"
                 )
-            ]
-        
-        case "snacks":
-            return [
-                i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
-                    (
-                        GruposComida.Frutas.FRUTAS[0],  # "F"
-                        GruposComida.Azucares.AZUCARES[0]  # "S"
-                    )
+            )
+        ]
+
+    if tipo == "snacks":
+        return [
+            i for i, item in enumerate(comida_bd) if item["grupo"].startswith(
+                (
+                    GruposComida.Frutas.FRUTAS[0],  # "F"
+                    GruposComida.Azucares.AZUCARES[0],  # "S"
                 )
-            ]
+            )
+        ]
+
+    raise ValueError(f"Unsupported meal type: {tipo}")
 
 
-def traducir_solucion(solucion, comida_bd):
-    """Convierte la solucion de numeros en una lista de alimentos con sus nutrientes"""
+def traducir_solucion(solucion, comida_bd=None):
+    """Convert the numeric solution into foods with their nutrient data."""
+    if comida_bd is None:
+        comida_bd = obtener_comida_bd()
 
     menu = {}
     datos_dia = {dia: {"calorias": 0, "proteinas": 0, "carbohidratos": 0, "grasas": 0} for dia in DIAS_SEMANA}
@@ -125,14 +140,14 @@ def traducir_solucion(solucion, comida_bd):
 
             for _ in range(num_alimentos):
 
-                # Traduce el indice a un alimento concreto
+                # Map the index to a concrete food item
                 if indice < len(solucion):
                     idx = int(solucion[indice])  
                     alimento = comida_bd[idx]
                     nombre_completo = f"- {alimento['nombre']} ({alimento['grupo']})"
                     alimentos.append(nombre_completo)
 
-                    # Suma las calorias y macronutrientes del alimento
+                    # Accumulate calories and macronutrients for the food item
                     calorias_totales += alimento["calorias"]
                     datos_dia[dia]["calorias"] += alimento["calorias"]
                     datos_dia[dia]["proteinas"] += alimento["proteinas"]
@@ -143,7 +158,7 @@ def traducir_solucion(solucion, comida_bd):
 
             menu[dia][comida["nombre"]] = (alimentos, calorias_totales)
     
-    # Calcula los porcentajes de macronutrientes para cada dia
+    # Compute macronutrient percentages for each day
     for dia in DIAS_SEMANA:
         calorias = datos_dia[dia]["calorias"]
 
