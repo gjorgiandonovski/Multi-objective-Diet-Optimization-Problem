@@ -23,10 +23,7 @@ def comida_basedatos():
     cnx = conexion_basedatos()
     cursor = cnx.cursor(dictionary=True)
 
-    query = """
-    SELECT COALESCE(nombre_en, nombre) AS nombre, grupo, calorias, grasas, proteinas, carbohidratos
-    FROM comida
-    """
+    query = "SELECT nombre, grupo, calorias, grasas, proteinas, carbohidratos FROM comida"
     cursor.execute(query)
     comida_basedatos = cursor.fetchall()
 
