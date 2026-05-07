@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dietopt"
+version = "0.1.0"
+description = "Multi-objective diet optimization (NSGA-II + PSO) using a MySQL food dataset"
+readme = "README_mapping.md"
+requires-python = ">=3.10"
+dependencies = [
+	"numpy",
+	"matplotlib",
+	"pandas",
+	"inspyred",
+	"python-dotenv",
+	"mysql-connector-python",
+	"scipy",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["dietopt*", "utilidades*"]
+
+[tool.pytest.ini_options]
+addopts = "-q --ignore=.venv --ignore=.git --ignore=.pycache_local"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
