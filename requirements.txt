@@ -1,0 +1,14 @@
+# Core
+numpy
+matplotlib
+pandas
+
+# Bioinspired algorithms (required by assignment)
+inspyred
+
+# DB + env
+python-dotenv
+mysql-connector-python
+
+# Stats
+scipy

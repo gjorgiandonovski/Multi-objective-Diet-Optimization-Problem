@@ -1,7 +1,7 @@
 # helper functions
 
-from src.utilidades.database import comida_basedatos
-from src.utilidades.constantes import GruposComida, DIAS_SEMANA, COMIDAS
+from utils.database import comida_basedatos
+from utils.constants import GruposComida, DIAS_SEMANA, COMIDAS
 
 comida_bd = None
 
@@ -21,6 +21,9 @@ def calculo_macronutrientes(proteinas, carbohidratos, grasas):
     calorias_grasas = grasas * 9
 
     total_calorias_macronutrientes = calorias_proteinas + calorias_carbohidratos + calorias_grasas
+
+    if total_calorias_macronutrientes == 0:
+        return 0.0, 0.0, 0.0
 
     porcentaje_proteinas = (calorias_proteinas / total_calorias_macronutrientes) * 100
     porcentaje_carbohidratos = (calorias_carbohidratos / total_calorias_macronutrientes) * 100

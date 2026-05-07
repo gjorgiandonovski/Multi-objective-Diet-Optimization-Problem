@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Sequence, Tuple
 
-from src.utilidades.encoding import DAYS, GENES_PER_DAY, INDIVIDUAL_LENGTH
+from utils.encoding import DAYS, GENES_PER_DAY, INDIVIDUAL_LENGTH
 
 try:
     from inspyred.ec.emo import Pareto
