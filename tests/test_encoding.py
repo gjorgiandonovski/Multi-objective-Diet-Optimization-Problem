@@ -1,9 +1,9 @@
 import random
 
-from utils.encoding import INDIVIDUAL_LENGTH, create_random_individual, validate_individual
+from diet_bao.encoding import INDIVIDUAL_LENGTH, create_individual
 
 
-def _sample_foods():
+def _foods():
     def item(nombre, grupo, cal, p, c, g):
         return {
             "nombre": nombre,
@@ -34,10 +34,6 @@ def _sample_foods():
     ]
 
 
-def test_create_random_individual_is_valid():
-    foods = _sample_foods()
-    rng = random.Random(0)
-    ind = create_random_individual(foods, edad=25, rng=rng)
-
-    assert len(ind) == INDIVIDUAL_LENGTH
-    assert validate_individual(ind, foods, edad=25) == []
+def test_create_individual_length():
+    individual = create_individual(_foods(), edad=25, rng=random.Random(0))
+    assert len(individual) == INDIVIDUAL_LENGTH

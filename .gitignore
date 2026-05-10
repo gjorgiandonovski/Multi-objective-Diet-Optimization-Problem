@@ -1,40 +1,77 @@
-# Python bytecode and caches
+### --- Core Python --- ###
 __pycache__/
 *.py[cod]
 *$py.class
-.pycache_local/
-
-# Virtual environments
-.venv/
-venv/
+*.so
+.Python
 env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+### --- Virtual Environments --- ###
+# This catches .venv, .venv-linux, my-env, etc.
+.venv*/
+venv*/
+env*/
 ENV/
 
-# Test and tooling caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.hypothesis/
-.coverage
-.coverage.*
-htmlcov/
+### --- Jupyter Notebooks --- ###
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+# Uncomment the next line if you want to ignore all notebook output (keeping just the code)
+# *.ipynb
 
-# Packaging/build artifacts
-build/
-dist/
-*.egg-info/
-.eggs/
-pip-wheel-metadata/
+### --- Data Science & Performance --- ###
+# Ignore large data files but keep the directory
+data/*
+!data/.gitkeep
 
-# Environment files
+# Experiment logs and plots
+experiments/*.csv
+experiments/*.png
+experiments/*.json
+experiments/*.log
+!experiments/README.md
+
+### --- Environment & Secrets --- ###
 .env
-.env.*
-!.env.example
+.venv
+.env.bak
+.env.resource
+*.runtimeconfig.json
 
-# IDE/editor files
-.idea/
-.vscode/
-
-# OS files
+### --- OS & IDEs --- ###
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
+.idea/
+
+### --- Optimization Project Specifics --- ###
+# Ignore compiled binaries from bitsandbytes or triton if they leak into root
+*.pyd
+*.so
+*.dll

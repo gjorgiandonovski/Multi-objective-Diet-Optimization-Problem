@@ -1,0 +1,80 @@
+# Multi-objective Diet Optimization
+
+Project for the Bioinspired Algorithms for Optimization (BAO) course.
+
+A weekly meal plan (7 days x 5 meals x structured slots) is built from a real food database to simultaneously minimise:
+
+- **f1**: per-day calorie deviation from the user's target.
+- **f2**: per-day macronutrient deviation from the assignment-specified split (55% carbohydrates, 27.5% fat, 22.5% protein).
+
+The macro targets sum to 105%; consequently the L1 deviation in f2 has an unavoidable lower bound of 5% per day (35 over the week). This is documented behaviour, not a defect.
+
+## Coverage of the assignment requirements
+
+| Requirement | Implementation |
+|---|---|
+| At least 1 evolutionary algorithm | `diet_bao/ea/nsga2_diet.py`, `diet_bao/ea/paes_diet.py` |
+| At least 1 swarm intelligence algorithm | `diet_bao/si/pso_diet.py` (scalarised), `diet_bao/si/mopso_diet.py` (multi-objective) |
+| Different representations compared | `diet_bao/representations/{direct_index,random_key}.py` |
+| Different constraint handlers compared | `diet_bao/constraints/{repair,penalty,death_penalty}.py` |
+| Multi-objective metrics | `diet_bao/metrics/{hypervolume,igd,spread}.py` |
+| 30+ replicates per configuration | `BenchmarkPlan(n_runs=30)` in `experiment_loader.py` |
+| Quality + runtime comparison | `summarize_results()` plus boxplots in `main.ipynb` |
+| Convergence + diversity plots | `diet_bao/experiment/visualization.py` |
+| Statistical significance tests | `stac/stat_tests.py` (Mann-Whitney U, Friedman, Holm post-hoc) |
+| inspyred library | NSGA-II and PAES wrap `inspyred.ec.emo`. PSO wraps `inspyred.swarm.PSO`. MOPSO is built on top of inspyred primitives. |
+
+## Project structure
+
+```
+diet_bao/
+  data.py                  MySQL loaders
+  encoding.py              food-group filtering (mirrors funciones_auxiliares.py)
+  fitness.py               f1 (per-day calorie dev) + f2 (per-day macro dev)
+  representations/         direct_index | random_key
+  constraints/             repair | penalty | death_penalty
+  metrics/                 hypervolume, IGD, Schott spacing
+  ea/
+    nsga2_diet.py          NSGA-II via inspyred
+    paes_diet.py           PAES via inspyred
+  si/
+    pso_diet.py            scalarised PSO via inspyred
+    mopso_diet.py          multi-objective PSO with non-dominated archive
+  experiment/
+    experiment_loader.py   AlgorithmConfig, BenchmarkPlan, run_all_subjects
+    visualization.py       convergence, Pareto, diversity plots
+stac/
+  stat_tests.py            Mann-Whitney, Friedman, Holm post-hoc, average ranks
+tests/                     unit and integration tests
+main.ipynb                 experiment notebook
+verify_db.py               database connection check
+smoke_test.py              short end-to-end pipeline check
+```
+
+## Setup
+
+1. Restore `food_database_dump.sql` (from the NutritionPlanning repository) into MySQL or MariaDB.
+2. Copy `.env.example` to `.env` and set `DB_PASSWORD`.
+3. Create a virtual environment and install the package:
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   pip install -e .
+   ```
+4. Run the sanity checks:
+   ```powershell
+   python verify_db.py
+   python smoke_test.py
+   pytest tests/ -q
+   ```
+5. Open `main.ipynb` and run all cells. Outputs (CSVs and PNGs) are written to `experiments/`.
+
+## Algorithms and their mapping to the course syllabus
+
+- **NSGA-II** — Topic 2 (genetic algorithms) and Topic 4 (multi-objective). Dominance + crowding-distance selection.
+- **PAES** — Topic 4 (multi-objective). (1+1)-ES with adaptive grid archive (Knowles and Corne, 2000). Contrasts with NSGA-II by using archive-based selection instead of population-dominance selection.
+- **Scalarised PSO** — Topic 3.1 (PSO) used as a single-objective baseline via weighted sum.
+- **MOPSO** — Topic 3.1 + Topic 4. Multi-objective swarm with a non-dominated external archive and crowding-based leader selection.
+
+ACO (Topic 3.2) and memetic algorithms (Topic 7.1) are not included; both are listed in the report as future work.
