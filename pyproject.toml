@@ -3,33 +3,28 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dietopt"
+name = "diet-bao"
 version = "0.1.0"
-description = "Multi-objective diet optimization (NSGA-II + PSO) using a MySQL food dataset"
-readme = "README_mapping.md"
+description = "BAO-style rebuild for multi-objective diet optimization"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-	"numpy",
-	"matplotlib",
-	"pandas",
-	"inspyred",
-	"python-dotenv",
-	"mysql-connector-python",
-	"scipy",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "scipy",
+    "inspyred",
+    "python-dotenv",
+    "mysql-connector-python",
 ]
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include = ["dietopt*", "utilidades*"]
+where = ["."]
+include = ["diet_bao*"]
 
 [tool.pytest.ini_options]
-addopts = "-q --ignore=.venv --ignore=.git --ignore=.pycache_local"
+addopts = "-q"
 testpaths = ["tests"]
-pythonpath = ["src"]
-
-[tool.coverage.run]
-branch = true
-source = ["src"]

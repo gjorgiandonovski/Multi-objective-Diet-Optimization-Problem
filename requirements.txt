@@ -1,14 +1,8 @@
-# Core
 numpy
-matplotlib
 pandas
-
-# Bioinspired algorithms (required by assignment)
+matplotlib
+scipy
 inspyred
-
-# DB + env
 python-dotenv
 mysql-connector-python
-
-# Stats
-scipy
+pytest
