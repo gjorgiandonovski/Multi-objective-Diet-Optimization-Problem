@@ -71,3 +71,14 @@ def test_pso_scalarized_runs(rep):
         representation=rep, pop_size=15, max_generations=8, seed=42,
     )
     _assert_result(res, has_front=False)
+
+
+def test_acs_scalarized_runs_direct_index():
+    from diet_bao.representations import DIRECT_INDEX
+    from diet_bao.si.acs_diet import run_acs
+
+    res = run_acs(
+        _foods(), edad=25, ctarget=2200.0,
+        representation=DIRECT_INDEX, pop_size=15, max_generations=8, seed=42,
+    )
+    _assert_result(res, has_front=False)

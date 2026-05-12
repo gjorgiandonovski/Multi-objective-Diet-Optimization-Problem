@@ -86,6 +86,19 @@ def default_tuning_grids() -> list[TuningGrid]:
             },
             fixed={},
         ),
+        TuningGrid(
+            algorithm="ACS",
+            representation="direct_index",
+            constraint_handler="none",
+            params={
+                "pop_size": [30, 60],
+                "max_generations": [40, 80],
+                "evaporation_rate": [0.05, 0.1],
+                "learning_rate": [0.05, 0.1],
+                "w1w2": [(1.0, 5.0)],
+            },
+            fixed={"initial_pheromone": 1.0},
+        ),
     ]
 
 
@@ -115,8 +128,20 @@ def _config_id(grid: TuningGrid, params: dict[str, Any]) -> str:
     """Build a short, stable id for a tuning configuration."""
     parts = [grid.algorithm.lower().replace("-", "").replace(" ", "")]
     # Force a deterministic ordering for readability.
-    for k in ("pop_size", "max_generations", "mutation_rate", "inertia",
-             "c1", "c2", "w1", "w2", "max_archive_size"):
+    for k in (
+        "pop_size",
+        "max_generations",
+        "mutation_rate",
+        "inertia",
+        "c1",
+        "c2",
+        "w1",
+        "w2",
+        "max_archive_size",
+        "evaporation_rate",
+        "learning_rate",
+        "initial_pheromone",
+    ):
         if k not in params:
             continue
         v = params[k]
@@ -136,6 +161,12 @@ def _config_id(grid: TuningGrid, params: dict[str, Any]) -> str:
             parts.append(f"w1-{str(v).replace('.', '')}")
         elif k == "w2":
             parts.append(f"w2-{str(v).replace('.', '')}")
+        elif k == "evaporation_rate":
+            parts.append(f"rho{str(v).replace('.', '')}")
+        elif k == "learning_rate":
+            parts.append(f"lr{str(v).replace('.', '')}")
+        elif k == "initial_pheromone":
+            parts.append(f"t0{str(v).replace('.', '')}")
         # c2 and other already collapsed by c1.
     return "_".join(parts)
 
@@ -236,6 +267,7 @@ def best_configurations(tuning_df: pd.DataFrame) -> pd.DataFrame:
     keep_cols = [
         "algorithm", "config_id", "pop_size", "max_generations",
         "mutation_rate", "inertia", "c1", "c2", "w1", "w2", "max_archive_size",
+        "evaporation_rate", "learning_rate", "initial_pheromone",
     ]
     keep_cols = [c for c in keep_cols if c in tuning_df.columns]
 

@@ -25,6 +25,7 @@ from diet_bao.metrics import (
 )
 from diet_bao.metrics.igd import union_reference_front
 from diet_bao.representations import ALL_REPRESENTATIONS
+from diet_bao.si.acs_diet import run_acs
 from diet_bao.si.pso_diet import run_pso
 from diet_bao.types import SubjectProfile
 
@@ -33,6 +34,7 @@ ALGORITHM_RUNNERS: dict[str, Callable[..., dict[str, Any]]] = {
     "NSGA-II": run_nsga2,
     "PAES": run_paes,
     "PSO-scalar": run_pso,
+    "ACS": run_acs,
 }
 
 
