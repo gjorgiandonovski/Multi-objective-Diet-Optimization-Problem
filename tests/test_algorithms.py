@@ -71,25 +71,3 @@ def test_pso_scalarized_runs(rep):
         representation=rep, pop_size=15, max_generations=8, seed=42,
     )
     _assert_result(res, has_front=False)
-
-
-@pytest.mark.parametrize("handler", [REPAIR, PENALTY])
-def test_mopso_runs(handler):
-    from diet_bao.si.mopso_diet import run_mopso
-
-    res = run_mopso(
-        _foods(), edad=25, ctarget=2200.0,
-        constraint_handler=handler, pop_size=15, max_generations=8, seed=42,
-    )
-    _assert_result(res)
-    assert res["archive_size"] >= 1
-
-
-def test_mopso_rejects_direct_index_representation():
-    from diet_bao.si.mopso_diet import run_mopso
-
-    with pytest.raises(ValueError):
-        run_mopso(
-            _foods(), edad=25, ctarget=2200.0,
-            representation=DIRECT_INDEX, pop_size=10, max_generations=2, seed=42,
-        )

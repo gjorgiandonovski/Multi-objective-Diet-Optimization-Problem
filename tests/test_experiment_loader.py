@@ -27,7 +27,7 @@ def test_default_plan_has_at_least_one_config_per_algorithm():
     algorithms = {c.algorithm for c in plan.configs}
     assert "NSGA-II" in algorithms
     assert "PAES" in algorithms
-    assert "MOPSO" in algorithms
+    assert "PSO-scalar" in algorithms
 
 
 def test_algorithm_config_kwargs_for_pso_drops_constraint_handler():
