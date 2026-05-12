@@ -6,6 +6,7 @@ Pareto front size, hypervolume, IGD, Schott's spacing and Delta Spread.
 """
 from __future__ import annotations
 
+import concurrent.futures
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
@@ -24,7 +25,6 @@ from diet_bao.metrics import (
 )
 from diet_bao.metrics.igd import union_reference_front
 from diet_bao.representations import ALL_REPRESENTATIONS
-from diet_bao.si.mopso_diet import run_mopso
 from diet_bao.si.pso_diet import run_pso
 from diet_bao.types import SubjectProfile
 
@@ -33,7 +33,6 @@ ALGORITHM_RUNNERS: dict[str, Callable[..., dict[str, Any]]] = {
     "NSGA-II": run_nsga2,
     "PAES": run_paes,
     "PSO-scalar": run_pso,
-    "MOPSO": run_mopso,
 }
 
 
@@ -54,7 +53,7 @@ class AlgorithmConfig:
             "pop_size": self.pop_size,
             "max_generations": self.max_generations,
         }
-        if self.algorithm in {"NSGA-II", "PAES", "MOPSO"}:
+        if self.algorithm in {"NSGA-II", "PAES"}:
             kw["constraint_handler"] = ALL_HANDLERS[self.constraint_handler]
         kw.update(self.extra)
         return kw
@@ -69,6 +68,7 @@ class BenchmarkPlan:
     configs: list[AlgorithmConfig]
     n_runs: int = 30
     seed0: int = 100
+    n_jobs: int = 1
 
 
 @dataclass(frozen=True)
@@ -94,18 +94,47 @@ def load_real_dataset() -> tuple[list[dict], list[SubjectProfile]]:
 
 
 def default_plan(n_runs: int = 30, seed0: int = 100) -> BenchmarkPlan:
-    """Reference benchmark plan touching every algorithm and constraint handler."""
+    """Reference benchmark plan matching the report's main grid."""
     configs = [
         AlgorithmConfig("nsga2_di_repair", "NSGA-II", "direct_index", "repair", 80, 80),
         AlgorithmConfig("nsga2_rk_repair", "NSGA-II", "random_key", "repair", 80, 80),
         AlgorithmConfig("nsga2_di_penalty", "NSGA-II", "direct_index", "penalty", 80, 80),
+        AlgorithmConfig("nsga2_di_death", "NSGA-II", "direct_index", "death_penalty", 80, 80),
         AlgorithmConfig("paes_di_repair", "PAES", "direct_index", "repair", 1, 800,
                         extra={"max_archive_size": 80, "mutation_rate": 0.1}),
         AlgorithmConfig("pso_scalar_rk", "PSO-scalar", "random_key", "repair", 60, 80),
-        AlgorithmConfig("mopso_rk_repair", "MOPSO", "random_key", "repair", 60, 80,
-                        extra={"max_archive_size": 80}),
     ]
     return BenchmarkPlan(configs=configs, n_runs=n_runs, seed0=seed0)
+
+
+# ---------------------------------------------------------------------------
+# Parallel execution helpers
+# ---------------------------------------------------------------------------
+
+_WORKER_FOODS: list[dict] | None = None
+
+
+def _set_worker_foods(foods: list[dict]) -> None:
+    global _WORKER_FOODS
+    _WORKER_FOODS = foods
+
+
+def _run_single_task(task: tuple[int, int, float, AlgorithmConfig, int]) -> tuple[int, AlgorithmConfig, int, dict[str, Any], float]:
+    """Run one (subject, config, seed) task.
+
+    Returns (subject_id, cfg, seed, result_dict, runtime_seconds).
+    """
+    subject_id, edad, ctarget, cfg, seed = task
+    foods = _WORKER_FOODS
+    if foods is None:
+        raise RuntimeError("Worker foods not initialised. This is a bug.")
+
+    runner = cfg.runner()
+    kwargs = cfg.kwargs()
+    t0 = time.perf_counter()
+    res = runner(foods, edad, ctarget, seed=seed, **kwargs)
+    dt = time.perf_counter() - t0
+    return subject_id, cfg, seed, res, float(dt)
 
 
 def _hv_reference(front: list[tuple[float, float]], pad: float = 1.1) -> tuple[float, float]:
@@ -139,24 +168,18 @@ def _evaluate_run(result: dict[str, Any], reference_front: list[tuple[float, ...
     return float(hv), float(igd), float(sp), float(ds)
 
 
-def evaluate_single_run(cfg: AlgorithmConfig, subject: SubjectProfile, foods: list[dict], seed: int) -> tuple:
-    runner = cfg.runner()
-    kwargs = cfg.kwargs()
-    t0 = time.perf_counter()
-    res = runner(foods, subject.edad, subject.calorias, seed=seed, **kwargs)
-    dt = time.perf_counter() - t0
-    return subject.sujeto_id, cfg, seed, res, dt
-
-
-def run_subject(subject: SubjectProfile, foods: list[dict], plan: BenchmarkPlan, raw_results: list | None = None) -> pd.DataFrame:
-    if raw_results is None:
-        raw_results = []
-        for cfg in plan.configs:
-            for r in range(plan.n_runs):
-                seed = plan.seed0 + r
-                # Strip subject_id from return value for backwards compatibility within this func
-                _, cfg_out, seed_out, res_out, dt_out = evaluate_single_run(cfg, subject, foods, seed)
-                raw_results.append((cfg_out, seed_out, res_out, dt_out))
+def run_subject(subject: SubjectProfile, foods: list[dict], plan: BenchmarkPlan) -> pd.DataFrame:
+    """Run all configurations for one subject (sequential in-process)."""
+    raw_results: list[tuple[AlgorithmConfig, int, dict[str, Any], float]] = []
+    for cfg in plan.configs:
+        runner = cfg.runner()
+        kwargs = cfg.kwargs()
+        for r in range(plan.n_runs):
+            seed = plan.seed0 + r
+            t0 = time.perf_counter()
+            res = runner(foods, subject.edad, subject.calorias, seed=seed, **kwargs)
+            dt = time.perf_counter() - t0
+            raw_results.append((cfg, seed, res, float(dt)))
 
     all_fronts = [[tuple(p) for p in res["front"]] for _, _, res, _ in raw_results]
     reference_front = union_reference_front(*all_fronts)
@@ -185,38 +208,67 @@ def run_subject(subject: SubjectProfile, foods: list[dict], plan: BenchmarkPlan,
     return pd.DataFrame(rows)
 
 
-def run_all_subjects(subjects: list[SubjectProfile], foods: list[dict], plan: BenchmarkPlan, parallel: bool = True) -> pd.DataFrame:
-    import concurrent.futures
-    import multiprocessing
-
-    if not parallel:
-        frames = [run_subject(s, foods, plan) for s in subjects]
-    else:
-        max_workers = min(multiprocessing.cpu_count(), 32)
-        print(f"Parallel evaluation across {max_workers} processes...")
-        raw_results_by_sub = {s.sujeto_id: [] for s in subjects}
-        
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
-            for s in subjects:
-                for cfg in plan.configs:
-                    for r in range(plan.n_runs):
-                        seed = plan.seed0 + r
-                        futures.append(executor.submit(evaluate_single_run, cfg, s, foods, seed))
-            
-            for future in concurrent.futures.as_completed(futures):
-                subj_id, cfg, seed, res, dt = future.result()
-                raw_results_by_sub[subj_id].append((cfg, seed, res, dt))
-                
-        # Reconstruct frames post-parallelism
-        frames = []
-        for s in subjects:
-            if raw_results_by_sub[s.sujeto_id]:
-                frames.append(run_subject(s, foods, plan, raw_results=raw_results_by_sub[s.sujeto_id]))
-                
-    if not frames:
+def run_all_subjects(subjects: list[SubjectProfile], foods: list[dict], plan: BenchmarkPlan) -> pd.DataFrame:
+    if not subjects or not plan.configs:
         return pd.DataFrame()
-    return pd.concat(frames, ignore_index=True)
+
+    # Default: deterministic, in-process evaluation.
+    if plan.n_jobs <= 1:
+        frames = [run_subject(s, foods, plan) for s in subjects]
+        return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+    # Parallel path: schedule every (subject, config, seed) run in one process pool.
+    tasks: list[tuple[int, int, float, AlgorithmConfig, int]] = []
+    for subject in subjects:
+        for cfg in plan.configs:
+            for r in range(plan.n_runs):
+                seed = plan.seed0 + r
+                tasks.append((subject.sujeto_id, subject.edad, float(subject.calorias), cfg, seed))
+
+    by_subject: dict[int, list[tuple[AlgorithmConfig, int, dict[str, Any], float]]] = {
+        s.sujeto_id: [] for s in subjects
+    }
+
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=plan.n_jobs,
+        initializer=_set_worker_foods,
+        initargs=(foods,),
+    ) as executor:
+        for subject_id, cfg, seed, res, dt in executor.map(_run_single_task, tasks, chunksize=1):
+            by_subject[subject_id].append((cfg, seed, res, dt))
+
+    frames = []
+    for subject in subjects:
+        raw_results = by_subject.get(subject.sujeto_id, [])
+        if not raw_results:
+            continue
+        all_fronts = [[tuple(p) for p in res["front"]] for _, _, res, _ in raw_results]
+        reference_front = union_reference_front(*all_fronts)
+
+        rows = []
+        for cfg, seed, res, dt in raw_results:
+            front = [tuple(p) for p in res["front"]]
+            f1_best, f2_best = res["best_f"]
+            hv, igd, sp, ds = _evaluate_run(res, reference_front)
+            rows.append(asdict(RunResult(
+                subject_id=subject.sujeto_id,
+                config_id=cfg.config_id,
+                algorithm=cfg.algorithm,
+                representation=cfg.representation,
+                constraint_handler=cfg.constraint_handler,
+                seed=seed,
+                runtime_s=float(dt),
+                f1_best=float(f1_best),
+                f2_best=float(f2_best),
+                front_size=len(front),
+                hypervolume=hv,
+                igd=igd,
+                spacing=sp,
+                delta_spread=ds,
+            )))
+        frames.append(pd.DataFrame(rows))
+
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 def summarize_results(results: pd.DataFrame) -> pd.DataFrame:

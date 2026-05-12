@@ -14,15 +14,20 @@ The macro targets sum to 105%; consequently the L1 deviation in f2 has an unavoi
 | Requirement | Implementation |
 |---|---|
 | At least 1 evolutionary algorithm | `diet_bao/ea/nsga2_diet.py`, `diet_bao/ea/paes_diet.py` |
-| At least 1 swarm intelligence algorithm | `diet_bao/si/pso_diet.py` (scalarised), `diet_bao/si/mopso_diet.py` (multi-objective) |
+| At least 1 swarm intelligence algorithm | `diet_bao/si/pso_diet.py` (scalarised) |
 | Different representations compared | `diet_bao/representations/{direct_index,random_key}.py` |
 | Different constraint handlers compared | `diet_bao/constraints/{repair,penalty,death_penalty}.py` |
 | Multi-objective metrics | `diet_bao/metrics/{hypervolume,igd,spread}.py` |
 | 30+ replicates per configuration | `BenchmarkPlan(n_runs=30)` in `experiment_loader.py` |
 | Quality + runtime comparison | `summarize_results()` plus boxplots in `main.ipynb` |
 | Convergence + diversity plots | `diet_bao/experiment/visualization.py` |
-| Statistical significance tests | `stac/stat_tests.py` (Mann-Whitney U, Friedman, Holm post-hoc) |
-| inspyred library | NSGA-II and PAES wrap `inspyred.ec.emo`. PSO wraps `inspyred.swarm.PSO`. MOPSO is built on top of inspyred primitives. |
+| Statistical significance tests | `stac/stat_tests.py` (Wilcoxon signed-ranks, Friedman aligned ranks, Shaffer + Holm corrections) |
+| inspyred library | NSGA-II and PAES wrap `inspyred.ec.emo`. PSO wraps `inspyred.swarm.PSO`. |
+
+Optional advanced techniques (allowed by the assignment) are implemented:
+
+- **Parallel experiment execution** via `BenchmarkPlan(n_jobs>1)` in `diet_bao/experiment/experiment_loader.py`.
+- **Memetic NSGA-II variant** via `memetic_rate>0` in `diet_bao/ea/nsga2_diet.py`.
 
 ## Project structure
 
@@ -39,12 +44,11 @@ diet_bao/
     paes_diet.py           PAES via inspyred
   si/
     pso_diet.py            scalarised PSO via inspyred
-    mopso_diet.py          multi-objective PSO with non-dominated archive
   experiment/
     experiment_loader.py   AlgorithmConfig, BenchmarkPlan, run_all_subjects
     visualization.py       convergence, Pareto, diversity plots
 stac/
-  stat_tests.py            Mann-Whitney, Friedman, Holm post-hoc, average ranks
+  stat_tests.py            Wilcoxon, Friedman aligned ranks, Shaffer + Holm, average ranks
 tests/                     unit and integration tests
 main.ipynb                 experiment notebook
 verify_db.py               database connection check
@@ -75,6 +79,5 @@ smoke_test.py              short end-to-end pipeline check
 - **NSGA-II** — Topic 2 (genetic algorithms) and Topic 4 (multi-objective). Dominance + crowding-distance selection.
 - **PAES** — Topic 4 (multi-objective). (1+1)-ES with adaptive grid archive (Knowles and Corne, 2000). Contrasts with NSGA-II by using archive-based selection instead of population-dominance selection.
 - **Scalarised PSO** — Topic 3.1 (PSO) used as a single-objective baseline via weighted sum.
-- **MOPSO** — Topic 3.1 + Topic 4. Multi-objective swarm with a non-dominated external archive and crowding-based leader selection.
 
-ACO (Topic 3.2) and memetic algorithms (Topic 7.1) are not included; both are listed in the report as future work.
+ACO (Topic 3.2) is not included. A simple memetic NSGA-II variant (Topic 7.1) is implemented as an optional extension.

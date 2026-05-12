@@ -35,7 +35,6 @@ def main() -> int:
             AlgorithmConfig("nsga2_di_repair", "NSGA-II", "direct_index", "repair", 30, 15),
             AlgorithmConfig("nsga2_rk_repair", "NSGA-II", "random_key", "repair", 30, 15),
             AlgorithmConfig("paes_di_repair", "PAES", "direct_index", "repair", 1, 100, extra={"max_archive_size": 30}),
-            AlgorithmConfig("mopso_rk_repair", "MOPSO", "random_key", "repair", 30, 15, extra={"max_archive_size": 30}),
             AlgorithmConfig("pso_scalar_rk", "PSO-scalar", "random_key", "repair", 30, 15),
         ],
         n_runs=3,

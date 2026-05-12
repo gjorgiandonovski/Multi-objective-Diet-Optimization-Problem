@@ -1,7 +1,6 @@
 """Scalarised PSO baseline (single-objective via weighted sum).
 
-Used as a baseline so that the report can compare naive scalarisation against
-the true multi-objective swarm implemented in mopso_diet.py.
+This provides the required swarm-intelligence method using ``inspyred.swarm.PSO``.
 """
 from __future__ import annotations
 

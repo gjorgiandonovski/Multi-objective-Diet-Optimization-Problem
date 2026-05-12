@@ -67,6 +67,59 @@ def _make_mutation(representation: Representation, state, rate_key: str = "mutat
     return variator
 
 
+def _make_local_search(representation: Representation, state, ctarget: float, rate_key: str = "memetic_rate"):
+    """Injects a 1-step Lamarckian local search across the offspring generation."""
+    def local_search(random, candidates, args):
+        rate = float(args.get(rate_key, 0.0))
+        if rate <= 0.0:
+            return candidates
+
+        out = []
+        for cand in candidates:
+            if random.random() > rate:
+                out.append(cand)
+                continue
+
+            # Evaluate current candidate
+            decoded = representation.decode(state, cand)
+            f1, f2 = fitness_vector(decoded, state.foods, ctarget=ctarget)
+
+            # Generate 1 random neighbor
+            neighbor = list(cand)
+            slot = random.randrange(len(neighbor))
+
+            if representation.name == "direct_index":
+                domain = state.per_position[slot]
+                if len(domain) > 1:
+                    # Pick a different food to ensure exploration
+                    current_val = neighbor[slot]
+                    new_val = current_val
+                    while new_val == current_val:
+                        new_val = domain[random.randrange(len(domain))]
+                    neighbor[slot] = new_val
+            else:
+                delta = random.gauss(0.0, 0.1)
+                v = float(neighbor[slot]) + delta
+                if v < 0.0: v = -v
+                if v > 1.0: v = 2.0 - v
+                neighbor[slot] = max(0.0, min(1.0, v))
+
+            neighbor = representation.repair(state, neighbor, random)
+            n_decoded = representation.decode(state, neighbor)
+            n_f1, n_f2 = fitness_vector(n_decoded, state.foods, ctarget=ctarget)
+
+            # Pareto dominance: if neighbor strictly dominates, replace candidate
+            # Or if it's equal but gives a better scalar sum
+            scalar_curr = f1 + f2
+            scalar_neigh = n_f1 + n_f2
+            if (n_f1 <= f1 and n_f2 <= f2 and (n_f1 < f1 or n_f2 < f2)) or (scalar_neigh < scalar_curr):
+                out.append(neighbor)
+            else:
+                out.append(cand)
+        return out
+    return local_search
+
+
 def run_nsga2(
     foods: Sequence[dict],
     edad: int,
@@ -77,6 +130,7 @@ def run_nsga2(
     pop_size: int = 80,
     max_generations: int = 80,
     mutation_rate: float = 0.1,
+    memetic_rate: float = 0.0,
     seed: int = 1,
 ) -> dict[str, Any]:
     from inspyred.ec import terminators, variators
@@ -112,6 +166,7 @@ def run_nsga2(
     algo.variator = [
         variators.n_point_crossover,
         _make_mutation(representation, state),
+        _make_local_search(representation, state, ctarget),
     ]
 
     final_pop = algo.evolve(
@@ -121,6 +176,7 @@ def run_nsga2(
         maximize=False,
         max_generations=max_generations,
         mutation_rate=mutation_rate,
+        memetic_rate=memetic_rate,
     )
 
     front: list[tuple[float, float]] = []
