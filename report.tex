@@ -75,7 +75,7 @@ Member 3 (Full Name)     & XX h \\ % TODO
 %==============================================
 \section*{Abstract}
 
-This work addresses the multi-objective weekly diet planning problem proposed in the Bioinspired Algorithms for Optimization (BAO) course. Given a database of 2{,}616 real food items and a user profile (daily caloric target plus age), the goal is to assemble a seven-day plan in which every day contains five meals --- morning snack, breakfast, lunch, afternoon snack and dinner --- with slot-specific food categories, while simultaneously (i) matching the daily caloric target as closely as possible and (ii) approximating the recommended macronutrient split of 50\% carbohydrates, 27.5\% fat and 22.5\% protein. We formulate the task as a constrained two-objective minimisation problem on a length-77 decision vector and solve it with Pareto-based bioinspired metaheuristics: NSGA-II and PAES (evolutionary), plus MOPSO and P-ACO (swarm intelligence). We further compare two encodings (direct integer indices and random keys in $[0,1]$) and three constraint-handling strategies (repair, penalty and death penalty). Per-algorithm hyperparameters are picked by an upstream tuning sweep on two representative subjects before the main configurations are executed 30 times per user profile on all five profiles and assessed with hypervolume, IGD, Schott's spacing and Deb's Delta Spread. Statistical analysis follows the BAO chapter~6 protocol: Friedman Aligned Ranks for the omnibus and Wilcoxon signed-ranks with Shaffer's static post-hoc for pairwise comparisons.
+This work addresses the multi-objective weekly diet planning problem proposed in the Bioinspired Algorithms for Optimization (BAO) course. Given a database of 2{,}616 real food items and a user profile (daily caloric target plus age), the goal is to assemble a seven-day plan in which every day contains five meals --- morning snack, breakfast, lunch, afternoon snack and dinner --- with slot-specific food categories, while simultaneously (i) matching the daily caloric target as closely as possible and (ii) approximating the recommended macronutrient split of 50\% carbohydrates, 27.5\% fat and 22.5\% protein. We formulate the task as a constrained two-objective minimisation problem on a length-77 decision vector and solve it with Pareto-based bioinspired metaheuristics: NSGA-II and PAES (evolutionary), plus MOPSO and P-ACO (swarm intelligence). We further compare two encodings (direct integer indices and random keys in $[0,1]$) and three constraint-handling strategies (repair, penalty and death penalty). The final benchmark contains seven configurations, executed 30 times per user profile on all five profiles and assessed with hypervolume, IGD, Schott's spacing and Deb's Delta Spread. Statistical analysis follows the BAO chapter~6 protocol: Friedman Aligned Ranks for the omnibus and Wilcoxon signed-ranks with Shaffer's static post-hoc for pairwise comparisons.
 
 %==============================================
 % PROBLEM
@@ -96,7 +96,7 @@ Personalised nutrition planning is a recurring task in clinical dietetics, sport
 Producing a coherent plan by hand quickly becomes tedious: the food catalogue is large, every meal of the day expects a specific set of food types (alcohol does not appear at breakfast, sugar items belong only to snacks, eggs do not appear at lunch), and the two objectives conflict in non-trivial ways. Choosing a high-protein lunch helps the protein target but adds calories that must be balanced elsewhere; choosing a low-calorie carbohydrate-rich breakfast helps the carbohydrate target but may leave the day below its caloric goal.
 
 \paragraph{Why bioinspired metaheuristics.}
-From an optimisation perspective the problem is a constrained combinatorial selection problem with multiple conflicting objectives. The macronutrient objective is a non-linear ratio, the per-meal admissible food sets are structured and irregular, and we will see in \S\ref{sec:def} that the size of the search space is far beyond what enumeration or exact methods can reasonably handle. Bioinspired metaheuristics fit this setting well: they explore large discrete spaces efficiently without requiring gradient information, and a number of them (NSGA-II, PAES) are specifically designed for Pareto optimisation with several conflicting criteria.
+From an optimisation perspective the problem is a constrained combinatorial selection problem with multiple conflicting objectives. The macronutrient objective is a non-linear ratio, the per-meal admissible food sets are structured and irregular, and we will see in \S\ref{sec:def} that the size of the search space is far beyond what enumeration or exact methods can reasonably handle. Bioinspired metaheuristics fit this setting well: they explore large discrete spaces efficiently without requiring gradient information, and the selected algorithms are designed or adapted for Pareto optimisation with several conflicting criteria.
 
 \subsection{Problem definition}
 \label{sec:def}
@@ -164,7 +164,7 @@ Four metaheuristics span both course families (evolutionary algorithms and swarm
 \begin{itemize}[leftmargin=1.2em, itemsep=0.3em]
 \item \textbf{NSGA-II} \emph{(evolutionary, multi-objective)} [1]. Selection by non-dominated sorting plus crowding-distance preservation. The de-facto baseline for Pareto-based EAs.
 \item \textbf{PAES} \emph{(evolutionary, multi-objective)} [2]. A $(1{+}1)$ evolution strategy paired with an adaptive grid archive. Contrasts NSGA-II both in cardinality (single working solution rather than a population) and in selection mechanism (archive-based rather than dominance-based), which makes it a useful complementary baseline.
-\item \textbf{MOPSO} \emph{(swarm, multi-objective)} [5]. Particles move in random-key space and are guided by leaders from an external non-dominated archive. The primary leader rule is the Sigma method of Mostaghim and Teich; a random archive pick is available as a fallback. The archive is bounded with crowding-distance pruning.
+\item \textbf{MOPSO} \emph{(swarm, multi-objective)} [3,5]. Particles move in random-key space and are guided by leaders from an external non-dominated archive. The primary leader rule is the Sigma method of Mostaghim and Teich; a random archive pick is available as a fallback. The archive is bounded with crowding-distance pruning.
 \item \textbf{P-ACO} \emph{(swarm, multi-objective)}. Ants construct direct-index weekly plans from per-slot pheromone distributions. A Pareto archive stores non-dominated plans, crowding-distance pruning maintains diversity, and archive members reinforce the pheromone trails without collapsing the objectives into a weighted sum.
 \end{itemize}
 
@@ -217,7 +217,7 @@ def variator(random, candidates, args):
 \subsection{Parameter settings and tuning protocol}
 \label{sec:tuning}
 
-The hyperparameters of every algorithm in the main grid are not picked by hand: for each algorithm we run a small but deliberate \textbf{tuning sweep} on subjects 1 and 4 (one large and one small caloric target) and keep the combination with the highest mean hypervolume. The grids are:
+The notebook implements a small but deliberate \textbf{tuning sweep} on subjects 1 and 4 (one large and one small caloric target), selecting configurations by highest mean hypervolume and breaking ties by mean runtime. The intended grids are:
 
 \begin{table}[H]
 \centering
@@ -236,26 +236,26 @@ P-ACO      & pop, gen, archive, evaporation           & $\{30,60\}\times\{40,80\
 \label{tab:tuning_grid}
 \end{table}
 
-The full tuning results, including the mean hypervolume, IGD and runtime per (algorithm, cell), are saved to \texttt{experiments/tuning\_results.csv} and the picked winners to \texttt{experiments/tuning\_best.csv}. The notebook prints a top-3 table per algorithm that can be pasted into Table~\ref{tab:tuning_winners} once the reruns have been completed.
+The full tuning results, including the mean hypervolume, IGD and runtime per (algorithm, cell), are saved to \texttt{experiments/tuning\_results.csv} and the picked winners to \texttt{experiments/tuning\_best.csv}. In the stored full run used for this report, the cached tuning file contains current NSGA-II and PAES rows but still contains old swarm rows from the replaced ACS/PSO-scalar baselines. Consequently, NSGA-II and PAES use the cached tuning winners, while MOPSO and P-ACO use the explicit notebook defaults shown in Table~\ref{tab:tuning_winners}. This is treated as a limitation of the cached experiment state, not as a hidden tuning result.
 
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lllr}
+\begin{tabular}{llllr}
 \toprule
-\textbf{Algorithm} & \textbf{Winning combination} & \textbf{Mean HV} & \textbf{Mean rt.\ (s)} \\
+\textbf{Algorithm} & \textbf{Settings used} & \textbf{Source} & \textbf{Mean HV} & \textbf{Mean rt.\ (s)} \\
 \midrule
-NSGA-II    & pop=80, gen=40, mut=0.2   & 1{,}127{,}764 & 4.81 \\
-PAES       & gen=400, archive=40, mut=0.2 & 361{,}265 & 2.26 \\
-MOPSO      & rerun required after MOPSO replacement   & -- & -- \\
-P-ACO      & rerun required after P-ACO replacement   & -- & -- \\
+NSGA-II    & pop=80, gen=40, mut=0.2 & tuning winner & 1{,}110{,}524 & 1.01 \\
+PAES       & pop=1, gen=400, archive=80, mut=0.2 & tuning winner & 361{,}265 & 0.73 \\
+MOPSO      & pop=60, gen=80, archive=80, $w=0.4$, $c_1=c_2=1.5$ & notebook default & -- & -- \\
+P-ACO      & pop=40, gen=80, archive=80, $\rho=0.1$, $\alpha=1$, $\tau_0=1$ & notebook default & -- & -- \\
 \bottomrule
 \end{tabular}
-\caption{Hyperparameter winners selected by the tuning step. To repopulate this table run the notebook end-to-end and copy the values from \texttt{experiments/tuning\_best.csv}.}
+\caption{Hyperparameter settings used by the full benchmark in \texttt{experiments/all\_runs.csv}. MOPSO and P-ACO should be retuned with \texttt{FORCE\_RERUN=True} for a fully refreshed swarm tuning table.}
 \label{tab:tuning_winners}
 \end{table}
 
-The seven main-grid configurations (Table~\ref{tab:configs}) consume the winning hyperparameters of their parent algorithm. PAES uses a $(1{+}1)$-ES so its population is 1 by construction; we compensate with a $10\!\times$ larger generation budget to keep the total number of evaluations comparable across algorithms.
+The seven main-grid configurations (Table~\ref{tab:configs}) consume the settings in Table~\ref{tab:tuning_winners}. PAES uses a $(1{+}1)$-ES so its population is 1 by construction; we compensate with a larger generation budget.
 
 \begin{table}[H]
 \centering
@@ -264,22 +264,22 @@ The seven main-grid configurations (Table~\ref{tab:configs}) consume the winning
 \toprule
 \textbf{Config id} & \textbf{Algorithm} & \textbf{Encoding} & \textbf{Pop} & \textbf{Gen} & \textbf{Notes} \\
 \midrule
-\texttt{nsga2\_di\_repair}   & NSGA-II    & direct\_index & tuned & tuned & repair handler, tuned mut.\ rate \\
-\texttt{nsga2\_di\_penalty}  & NSGA-II    & direct\_index & tuned & tuned & penalty $(1000,10)$ per violation \\
-\texttt{nsga2\_di\_death}    & NSGA-II    & direct\_index & tuned & tuned & infeasible $\to +\infty$ \\
-\texttt{nsga2\_rk\_repair}   & NSGA-II    & random\_key   & tuned & tuned & Gaussian mutation $\sigma=0.1$ \\
-\texttt{paes\_di\_repair}    & PAES       & direct\_index & 1     & tuned & tuned archive size, tuned mut.\ rate \\
-\texttt{mopso\_rk}           & MOPSO      & random\_key   & tuned & tuned & Sigma leader, crowding archive \\
-\texttt{paco\_di}            & P-ACO      & direct\_index & tuned & tuned & per-slot pheromones, crowding archive \\
+\texttt{nsga2\_di\_repair}   & NSGA-II    & direct\_index & 80 & 40 & repair handler, mut.\ rate 0.2 \\
+\texttt{nsga2\_di\_penalty}  & NSGA-II    & direct\_index & 80 & 40 & penalty $(1000,10)$ per violation \\
+\texttt{nsga2\_di\_death}    & NSGA-II    & direct\_index & 80 & 40 & infeasible $\to +\infty$ \\
+\texttt{nsga2\_rk\_repair}   & NSGA-II    & random\_key   & 80 & 40 & Gaussian mutation $\sigma=0.1$ \\
+\texttt{paes\_di\_repair}    & PAES       & direct\_index & 1  & 400 & archive size 80, mut.\ rate 0.2 \\
+\texttt{mopso\_rk}           & MOPSO      & random\_key   & 60 & 80 & Sigma leader, crowding archive size 80 \\
+\texttt{paco\_di}            & P-ACO      & direct\_index & 40 & 80 & per-slot pheromones, archive size 80 \\
 \bottomrule
 \end{tabular}
-\caption{Seven main-grid configurations. ``tuned'' refers to the value selected by the tuning sweep in Table~\ref{tab:tuning_winners}.}
+\caption{Seven main-grid configurations used in the full experiment.}
 \label{tab:configs}
 \end{table}
 
 \subsection{Experimental setup}
 
-Each of the six configurations is executed \textbf{30 stochastic replicates} on each of the \textbf{five user profiles}, totalling $6\!\times\!5\!\times\!30 = 900$ runs. Per-replicate seeds are deterministic and unique (\texttt{seed0+r}), so the experiment is fully reproducible. The notebook \texttt{main.ipynb} schedules every (subject, configuration, seed) triple through \texttt{concurrent.futures.ProcessPoolExecutor} (\texttt{BenchmarkPlan(n\_jobs=4)} by default) and writes the raw rows to \texttt{experiments/all\_runs.csv}.
+Each of the seven configurations is executed \textbf{30 stochastic replicates} on each of the \textbf{five user profiles}, totalling $7\!\times\!5\!\times\!30 = 1050$ runs. Per-replicate seeds are deterministic and unique (\texttt{seed0+r}), so the experiment is fully reproducible. The notebook \texttt{main.ipynb} schedules every (subject, configuration, seed) triple through \texttt{concurrent.futures.ProcessPoolExecutor} (\texttt{BenchmarkPlan(n\_jobs=4)} by default) and writes the raw rows to \texttt{experiments/all\_runs.csv}.
 
 \paragraph{Metrics.} For every run we record the best $f_1$, the best $f_2$, the runtime and the size of the Pareto front. From the raw front we additionally compute four multi-objective indicators:
 \begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
@@ -291,7 +291,7 @@ Each of the six configurations is executed \textbf{30 stochastic replicates} on 
 
 \paragraph{Statistical tests.} Following the procedure recommended in BAO chapter~6 (``Comparing Algorithms Output''), our 30 replicates are paired across configurations because they share the same seed schedule. We therefore use the two-sided \textbf{Wilcoxon signed-ranks test} [9] for 1-vs-1 paired comparisons rather than the unpaired Mann--Whitney U. The omnibus across all seven configurations uses the \textbf{Friedman Aligned Ranks test} [8], a more powerful variant of the plain Friedman test that ranks all block-aligned observations together. The N-vs-N post-hoc analysis is pairwise Wilcoxon with \textbf{Shaffer's static procedure} [11]; the simpler Holm--Bonferroni correction [10] is also reported for backward comparability.
 
-\paragraph{Limitations.} (i) A single dataset (the course's NutritionPlanning database) is used; results may not transfer to other food catalogues. (ii) The variation operators of the direct-index encoding produce only feasible candidates by construction, which makes the constraint-handler comparison degenerate (see \S\ref{sec:results}). (iii) The hyperparameter sweep in \S\ref{sec:tuning} is small (12--16 cells per algorithm) and is run on only two of the five subjects; a denser, full-subject sweep is a natural follow-up.
+\paragraph{Limitations.} (i) A single dataset (the course's NutritionPlanning database) is used; results may not transfer to other food catalogues. (ii) The variation operators of the direct-index encoding produce only feasible candidates by construction, which makes the constraint-handler comparison degenerate (see \S\ref{sec:results}). (iii) The cached tuning file used by this run is fresh for NSGA-II and PAES but not for the new swarm algorithms, so MOPSO and P-ACO use explicit defaults. (iv) The tuning sweep in \S\ref{sec:tuning} is small (12--16 cells per algorithm) and is run on only two of the five subjects; a denser, full-subject sweep is a natural follow-up.
 
 \subsection{Data description}
 
@@ -303,11 +303,11 @@ The MySQL dump provided by the course contains \textbf{2{,}616 food items}, each
 \section{Experimental results}
 \label{sec:results}
 
-\paragraph{Regeneration note.} The implementation has been updated from weighted-sum swarm baselines to MOPSO and P-ACO. The numerical tables and figures in this section must be regenerated by rerunning \texttt{main.ipynb}; the notebook now writes fresh CSV/PNG artefacts for the seven-configuration grid.
+\paragraph{Result source.} The numerical tables and figures in this section are read from the full-run artefacts generated by \texttt{main.ipynb}: \texttt{experiments/all\_runs.csv} contains 1050 rows, and the notebook sanity checks confirm 7 configurations, 5 subjects and 30 seeds per pair.
 
 \subsection{Aggregated metrics}
 
-Table~\ref{tab:summary} reports the mean of every metric across the 30 replicates and 5 subjects per configuration ($n=150$ per row), computed from \texttt{experiments/all\_runs.csv} produced by \texttt{main.ipynb}. The three direct-index NSGA-II handlers are identical on every quality metric because the domain-aware variator never produces an infeasible candidate (see Discussion); only runtime differs.
+Table~\ref{tab:summary} reports the mean of every metric across the 30 replicates and 5 subjects per configuration ($n=150$ per row), computed from \texttt{experiments/all\_runs.csv} produced by \texttt{main.ipynb}. The three direct-index NSGA-II handlers are identical on every quality metric because the domain-aware variator never produces an infeasible candidate (see Discussion); runtime differs because the handlers have different evaluation overhead.
 
 \begin{table}[H]
 \centering
@@ -316,22 +316,23 @@ Table~\ref{tab:summary} reports the mean of every metric across the 30 replicate
 \toprule
 \textbf{Config} & \textbf{HV $\uparrow$} & \textbf{IGD $\downarrow$} & \textbf{Spacing $\downarrow$} & \textbf{$\Delta$-Spread $\downarrow$} & \textbf{$f_1$ best $\downarrow$} & \textbf{$f_2$ best $\downarrow$} & \textbf{Runtime (s) $\downarrow$} & \textbf{Front} \\
 \midrule
-\texttt{nsga2\_rk\_repair}   & \textbf{1{,}084{,}360} & \textbf{216.22} & 97.86  & 0.827 & 1{,}617.7 & 188.8 & 6.10  & \textbf{80} \\
-\texttt{nsga2\_di\_repair}   & 1{,}079{,}068 & 256.39 & 94.59  & 0.810 & 1{,}797.5 & 176.9 & 11.10 & \textbf{80} \\
-\texttt{nsga2\_di\_penalty}  & 1{,}079{,}068 & 256.39 & 94.59  & 0.810 & 1{,}797.5 & 176.9 & 11.24 & \textbf{80} \\
-\texttt{nsga2\_di\_death}    & 1{,}079{,}068 & 256.39 & 94.59  & 0.810 & 1{,}797.5 & 176.9 & 11.20 & \textbf{80} \\
-\texttt{paes\_di\_repair}    & 339{,}189     & 806.29 & 185.93 & 1.198 & 2{,}898.0 & \textbf{144.5} & 4.56  & 38.7 \\
-\texttt{pso\_scalar\_rk}     & 3{,}006       & 1{,}807.91 & \textbf{0.00} & \textbf{0.000} & \textbf{1{,}480.3} & 184.5 & \textbf{1.18} & 1 \\
+\texttt{nsga2\_rk\_repair}   & 1{,}000{,}267 & \textbf{285.69} & \textbf{102.75} & 0.836 & 1{,}617.65 & 171.16 & 0.75 & \textbf{80.00} \\
+\texttt{nsga2\_di\_repair}   & \textbf{1{,}050{,}334} & 335.44 & 104.36 & 0.829 & 1{,}800.68 & 172.76 & 0.70 & \textbf{80.00} \\
+\texttt{nsga2\_di\_penalty}  & \textbf{1{,}050{,}334} & 335.44 & 104.36 & 0.829 & 1{,}800.68 & 172.76 & 1.38 & \textbf{80.00} \\
+\texttt{nsga2\_di\_death}    & \textbf{1{,}050{,}334} & 335.44 & 104.36 & 0.829 & 1{,}800.68 & 172.76 & 1.38 & \textbf{80.00} \\
+\texttt{paes\_di\_repair}    & 299{,}014 & 1{,}055.82 & 146.20 & 1.298 & 2{,}916.02 & \textbf{138.09} & 1.04 & 70.38 \\
+\texttt{mopso\_rk}           & 359{,}087 & 648.76 & 332.13 & 1.038 & 1{,}709.76 & 154.95 & \textbf{0.57} & 24.95 \\
+\texttt{paco\_di}            & 257{,}049 & 672.13 & 425.27 & \textbf{0.817} & \textbf{1{,}570.26} & 144.71 & 30.24 & 8.29 \\
 \bottomrule
 \end{tabular}
-\caption{Mean metrics per configuration across all 30 replicates and 5 subjects ($n=150$ per row). Bold marks the best value in each column (ties are bolded). Higher is better for hypervolume; lower is better for IGD, spacing, $\Delta$-Spread, $f_1$, $f_2$ and runtime. ``Front'' is the mean cardinality of the final non-dominated set. Note: for the scalarised PSO baseline the front size is 1 by construction, so spacing and $\Delta$-Spread collapse to 0 by definition and should not be interpreted as multi-objective diversity.
+\caption{Mean metrics per configuration across all 30 replicates and 5 subjects ($n=150$ per row). Bold marks the best value in each column (ties are bolded). Higher is better for hypervolume; lower is better for IGD, spacing, $\Delta$-Spread, $f_1$, $f_2$ and runtime. ``Front'' is the mean cardinality of the final non-dominated set.
 }
 \label{tab:summary}
 \end{table}
 
 \subsection{Statistical significance}
 
-The \textbf{Friedman Aligned Ranks} omnibus across the six main configurations is highly significant on every metric (the p-values underflow to 0.0 at machine precision in \texttt{experiments/friedman\_aligned.csv}). Table~\ref{tab:ranks} reports the average aligned ranks per configuration on three representative metrics.
+The \textbf{Friedman Aligned Ranks} omnibus across the seven main configurations is highly significant on every metric (the p-values underflow to 0.0 at machine precision in \texttt{experiments/friedman\_aligned.csv}). Table~\ref{tab:ranks} reports the average aligned ranks per configuration on three representative metrics.
 
 \begin{table}[H]
 \centering
@@ -340,12 +341,13 @@ The \textbf{Friedman Aligned Ranks} omnibus across the six main configurations i
 \toprule
 \textbf{Config} & \textbf{HV rank $\downarrow$} & \textbf{IGD rank $\downarrow$} & \textbf{Runtime rank $\downarrow$} \\
 \midrule
-\texttt{nsga2\_di\_death}    & 292.74 & 317.31 & 680.32 \\
-\texttt{nsga2\_di\_penalty}  & 292.74 & 317.31 & 704.68 \\
-\texttt{nsga2\_di\_repair}   & 292.74 & 317.31 & 641.50 \\
-\texttt{nsga2\_rk\_repair}   & 332.57 & \textbf{268.82} & 375.49 \\
-\texttt{paes\_di\_repair}    & 706.38 & 674.65 & 225.51 \\
-\texttt{pso\_scalar\_rk}     & 785.83 & 807.61 & \textbf{75.50} \\
+\texttt{nsga2\_di\_death}    & \textbf{293.87} & 367.34 & 748.29 \\
+\texttt{nsga2\_di\_penalty}  & \textbf{293.87} & 367.34 & 752.71 \\
+\texttt{nsga2\_di\_repair}   & \textbf{293.87} & 367.34 & 237.17 \\
+\texttt{nsga2\_rk\_repair}   & 355.17 & \textbf{299.94} & 357.23 \\
+\texttt{mopso\_rk}           & 789.65 & 663.56 & \textbf{82.10} \\
+\texttt{paes\_di\_repair}    & 813.41 & 899.21 & 525.50 \\
+\texttt{paco\_di}            & 838.64 & 713.77 & 975.50 \\
 \bottomrule
 \end{tabular}
 \caption{Friedman \emph{Aligned} Ranks per metric (lower is better). For hypervolume, the aligned observations are sign-flipped so that better HV produces better (lower) ranks. Values are read directly from \texttt{experiments/friedman\_aligned.csv}.}
@@ -354,52 +356,52 @@ The \textbf{Friedman Aligned Ranks} omnibus across the six main configurations i
 
 The pairwise \textbf{Wilcoxon signed-ranks test with Shaffer's static post-hoc} on hypervolume (\texttt{experiments/pairwise\_hv\_shaffer.csv}) yields the following picture:
 \begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
-\item \textbf{PSO vs. all others:} \texttt{pso\_scalar\_rk} is significantly different from every other configuration ($p_{\mathrm{adj}}\approx 3.45\times 10^{-25}$) and is also the worst on HV by a large margin (Table~\ref{tab:summary}).
-\item \textbf{PAES vs. NSGA-II:} \texttt{paes\_di\_repair} is significantly worse than every NSGA-II variant on HV ($p_{\mathrm{adj}}\approx 3.45\times 10^{-25}$).
-\item \textbf{Within NSGA-II:} all NSGA-II variants are statistically tied on HV (direct-index handlers: $p_{\mathrm{adj}}=1.0$; random-key vs. any direct-index variant: $p_{\mathrm{adj}}\approx 0.463$).
+\item \textbf{NSGA-II vs. non-NSGA-II:} every NSGA-II variant is significantly better on HV than PAES and P-ACO; the adjusted p-values are at most $1.03\times 10^{-24}$. NSGA-II is also significantly better than MOPSO ($p_{\mathrm{adj}}\approx 3.12\times 10^{-24}$).
+\item \textbf{Within NSGA-II:} the three direct-index constraint handlers are exactly tied on HV ($p_{\mathrm{adj}}=1.0$). The random-key NSGA-II row is not significantly different from the direct-index rows on HV at $\alpha=0.05$ ($p_{\mathrm{adj}}\approx 0.064$), although it has the best IGD mean and rank.
+\item \textbf{Among non-NSGA-II methods:} MOPSO and PAES are not significantly different on HV ($p_{\mathrm{adj}}\approx 0.397$). MOPSO is significantly better than P-ACO on HV ($p_{\mathrm{adj}}\approx 0.0038$), and PAES is also significantly better than P-ACO on HV ($p_{\mathrm{adj}}\approx 0.0089$).
 \end{itemize}
 
 \subsection{Visualisations}
 
-Figure~\ref{fig:demo} contrasts the three algorithms on a single run for subject 1: the left panel shows their final Pareto fronts, the middle panel tracks the best scalar value over generations (convergence), and the right panel tracks front size as a proxy for diversity. Figure~\ref{fig:boxplots} summarises the distribution of every metric across the per-configuration sample. Figure~\ref{fig:bestpts} clouds the best $(f_1, f_2)$ point of every run for subject 1.
+Figure~\ref{fig:demo} contrasts the seven configurations on a single run for subject 1: the left panel shows their final Pareto fronts, the middle panel tracks the best scalar value over generations (convergence), and the right panel tracks front or archive size as a proxy for diversity. Figure~\ref{fig:boxplots} summarises the distribution of every metric across the per-configuration sample. Figure~\ref{fig:bestpts} clouds the best $(f_1, f_2)$ point of every run for subject 1.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{experiments/demo_overview.png}
-\caption{Single-run overview for subject 1: objective space (left), convergence (centre), diversity (right). NSGA-II maintains the largest stable front; PAES grows its archive monotonically; scalarised PSO collapses to a single point.}
+\caption{Single-run overview for subject 1: objective space (left), convergence (centre), diversity (right). NSGA-II maintains full 80-point fronts; PAES and MOPSO keep medium-sized archives; P-ACO returns a smaller pheromone-reinforced archive.}
 \label{fig:demo}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{experiments/boxplots.png}
-\caption{Per-configuration distributions across all 30 replicates $\times$ 5 subjects. Top row: hypervolume, IGD, spacing. Bottom row: best $f_1$, best $f_2$, runtime in seconds. NSGA-II variants dominate hypervolume and IGD; the scalarised PSO baseline is fastest but yields a degenerate front (size 1).}
+\caption{Per-configuration distributions across all 30 replicates $\times$ 5 subjects. Top row: hypervolume, IGD, spacing. Bottom row: best $f_1$, best $f_2$, runtime in seconds. NSGA-II variants dominate hypervolume and IGD; MOPSO is fastest; P-ACO is the slowest method in the current implementation.}
 \label{fig:boxplots}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.7\textwidth]{experiments/best_pts_subject_1.png}
-\caption{Cloud of best $(f_1, f_2)$ values per run for subject 1, coloured by configuration. NSGA-II variants concentrate in the bottom-left (best on both objectives); PAES populates intermediate regions; the scalarised PSO collapses to a single point per run.}
+\caption{Cloud of best $(f_1, f_2)$ values per run for subject 1, coloured by configuration. NSGA-II variants and MOPSO tend to occupy the stronger calorie-error region, while PAES and P-ACO often trade weaker hypervolume for competitive macronutrient-error points.}
 \label{fig:bestpts}
 \end{figure}
 
 \subsection{Discussion}
 
-\paragraph{NSGA-II is the dominant algorithm family.}
-NSGA-II configurations dominate the multi-objective indicators (hypervolume and IGD). The non-NSGA-II baselines are significantly worse on hypervolume under Wilcoxon+Shaffer.
+\paragraph{NSGA-II is the dominant algorithm family on Pareto coverage.}
+The three direct-index NSGA-II configurations achieve the highest mean hypervolume ($1{,}050{,}334$), and the random-key NSGA-II configuration achieves the best mean IGD ($285.69$). All non-NSGA-II configurations are significantly worse than NSGA-II on hypervolume under Wilcoxon+Shaffer.
 
-\paragraph{Random-key matches direct-index hypervolume but runs $\approx 1.82\times$ faster.}
-The hypervolume difference between \texttt{nsga2\_di\_repair} and \texttt{nsga2\_rk\_repair} is statistically negligible ($p_{\mathrm{adj}}\approx 0.463$ on HV), while the IGD aligned ranks favour the random-key variant (Table~\ref{tab:ranks}). The runtime gap is large: $6.10$~s vs.\ $11.10$~s on average (Table~\ref{tab:summary}), a $\approx 1.82\times$ speed-up.
+\paragraph{Random-key NSGA-II trades a small HV loss for better IGD.}
+The hypervolume difference between \texttt{nsga2\_di\_repair} and \texttt{nsga2\_rk\_repair} is not significant at $\alpha=0.05$ ($p_{\mathrm{adj}}\approx 0.064$ on HV), while the IGD mean and aligned rank favour the random-key variant (Table~\ref{tab:ranks}). Runtime is similar for the two repair variants: $0.70$~s for direct-index repair and $0.75$~s for random-key repair.
 
 \paragraph{Constraint handlers are equivalent in our setup.}
-The three direct-index configurations (\texttt{repair}, \texttt{penalty}, \texttt{death\_penalty}) produce identical hypervolume, IGD, spacing, $f_1$ and $f_2$ (Table~\ref{tab:summary}), with $p_{\mathrm{adj}}\!=\!1.0$ in the Wilcoxon+Shaffer pairwise test on hypervolume. The reason is structural rather than statistical: our domain-aware mutation always picks each gene from $D_j$, so no infeasible candidate is ever produced and no handler is ever triggered. The only observable difference between the three handlers is runtime, which stays within a few percent. Meaningfully differentiating the three handlers would require an unrestricted variator (an item we list under Future Work).
+The three direct-index configurations (\texttt{repair}, \texttt{penalty}, \texttt{death\_penalty}) produce identical hypervolume, IGD, spacing, $f_1$ and $f_2$ (Table~\ref{tab:summary}), with $p_{\mathrm{adj}}\!=\!1.0$ in the Wilcoxon+Shaffer pairwise test on hypervolume. The reason is structural rather than statistical: our domain-aware mutation always picks each gene from $D_j$, so no infeasible candidate is ever produced and no handler changes the search trajectory. The only observable difference is runtime: \texttt{repair} is faster ($0.70$~s) than \texttt{penalty} and \texttt{death\_penalty} (both $1.38$~s). Meaningfully differentiating the three handlers would require an unrestricted variator (an item we list under Future Work).
 
 \paragraph{PAES has the best per-point macronutrient quality but weaker Pareto coverage.}
-The mean best $f_2$ for PAES is $144.5$, the lowest of the six configurations (Table~\ref{tab:summary}). Hypervolume, however, is substantially lower than NSGA-II. This is an expected trade-off for a $(1{+}1)$-ES with grid archiving: it exploits one trajectory deeply but does not actively diversify the front.
+The mean best $f_2$ for PAES is $138.09$, the lowest of the seven configurations (Table~\ref{tab:summary}). Hypervolume, however, is substantially lower than NSGA-II. This is an expected trade-off for a $(1{+}1)$-ES with grid archiving: it exploits one trajectory deeply but does not actively diversify the front as strongly as NSGA-II.
 
-\paragraph{Scalarised PSO is a baseline reference, not a competitor.}
-It returns a single point per run --- front size 1, extremely low hypervolume and the worst IGD. It is the fastest method, but for a multi-objective deliverable it is not an appropriate substitute for a Pareto-based algorithm.
+\paragraph{The swarm algorithms show different strengths.}
+MOPSO is the fastest method ($0.57$~s) and has the best swarm-side hypervolume and IGD, but it remains far below NSGA-II on Pareto coverage. P-ACO is slow in the current implementation ($30.24$~s) and has the lowest hypervolume, but it achieves the best mean $f_1$ ($1{,}570.26$) and the best mean $\Delta$-Spread ($0.817$). The latter should be read carefully because P-ACO also returns the smallest archive on average (8.29 points).
 
 \subsection{Code repository}
 
@@ -412,7 +414,7 @@ The reproducibility workflow is: run \texttt{main.ipynb} end-to-end (database co
 %==============================================
 \section{Conclusion and future work}
 
-This project addressed the multi-objective diet optimisation problem with two evolutionary algorithms (NSGA-II, PAES), two swarm intelligence algorithms (MOPSO, P-ACO), two encodings (direct-index, random-key) and three constraint handlers (repair, penalty, death penalty). The current implementation uses Pareto archives throughout: the previous weighted-sum swarm baselines were replaced by MOPSO and P-ACO so that the swarm side also optimises the actual multi-objective formulation.
+This project addressed the multi-objective diet optimisation problem with two evolutionary algorithms (NSGA-II, PAES), two swarm intelligence algorithms (MOPSO, P-ACO), two encodings (direct-index, random-key) and three constraint handlers (repair, penalty, death penalty). The current implementation uses Pareto archives throughout: the previous weighted-sum swarm baselines were replaced by MOPSO and P-ACO so that the swarm side also optimises the actual multi-objective formulation. The full run completed 1050 executions and shows NSGA-II as the strongest family on Pareto coverage, MOPSO as the fastest method, PAES as the strongest on the macronutrient objective, and P-ACO as the strongest on the calorie-error objective.
 
 A side finding that turned out to be educationally relevant is that the three constraint handlers became indistinguishable: because mutation always picks genes from valid domains, no infeasible candidate is ever produced and the handlers never fire. We treat this as a documented limitation of the variation operator and as motivation for the most natural follow-up.
 
@@ -424,10 +426,10 @@ Two advanced techniques covered in BAO chapter~7 were implemented as optional ex
 The main experimental grid is planned as $7 \text{ configs} \times 5 \text{ subjects} \times 30 \text{ replicates} = 1050$ independent algorithm executions, which makes it embarrassingly parallel. We therefore added a multiprocessing execution path to \texttt{run\_all\_subjects} using \texttt{concurrent.futures.ProcessPoolExecutor}, enabled by setting \texttt{BenchmarkPlan(n\_jobs>1)}. This does not change per-run runtime measurements (each run is still timed individually), but it significantly reduces the wall-clock time required to complete the full grid.
 
 \paragraph{2. Memetic algorithms / local search (highly recommended, moderate effort).}
-To explore whether local exploitation can further improve the NSGA-II fronts, we implemented a simple memetic NSGA-II variant by injecting a 1-step, domain-respecting local search into the NSGA-II variator, controlled by a \texttt{memetic\_rate} hyperparameter. The operator proposes a single-slot in-domain perturbation and accepts it when it Pareto-dominates (or improves the scalarised sum as a tie-break). This variant is available for additional experiments, but it is not part of the six-configuration main grid so that Tables~\ref{tab:configs} and~\ref{tab:summary} remain directly comparable.
+To explore whether local exploitation can further improve the NSGA-II fronts, we implemented a simple memetic NSGA-II variant by injecting a 1-step, domain-respecting local search into the NSGA-II variator, controlled by a \texttt{memetic\_rate} hyperparameter. The operator proposes a single-slot in-domain perturbation and accepts it when it Pareto-dominates (or improves the scalarised sum as a tie-break). This variant is available for additional experiments, but it is not part of the seven-configuration main grid so that Tables~\ref{tab:configs} and~\ref{tab:summary} remain directly comparable.
 
 \paragraph{Additional smaller follow-ups.}
-(i) Replace the domain-aware variator with a naive (unrestricted) one so the three constraint handlers can be properly differentiated. (ii) Extend the fitness function to incorporate the user-profile preferences, dislikes and allergies that the database carries but the present formulation ignores. (iii) Rerun the full MOPSO/P-ACO grid after the scalarised swarm baselines have been removed.
+(i) Replace the domain-aware variator with a naive (unrestricted) one so the three constraint handlers can be properly differentiated. (ii) Extend the fitness function to incorporate the user-profile preferences, dislikes and allergies that the database carries but the present formulation ignores. (iii) Force a fresh tuning rerun for MOPSO and P-ACO so the swarm algorithms use selected hyperparameters rather than notebook defaults.
 
 %==============================================
 % REFERENCES
