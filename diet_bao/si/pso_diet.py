@@ -7,7 +7,7 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence
 
-from diet_bao.fitness import fitness_vector
+from diet_bao.fitness import fitness_vector_state
 from diet_bao.representations import RANDOM_KEY, Representation
 
 
@@ -37,7 +37,7 @@ def run_pso(
         vals = []
         for cand in candidates:
             decoded = representation.decode(state, cand)
-            f1, f2 = fitness_vector(decoded, state.foods, ctarget=ctarget)
+            f1, f2 = fitness_vector_state(decoded, state, ctarget=ctarget)
             vals.append((w1 * f1) + (w2 * f2))
         return vals
 
@@ -61,7 +61,7 @@ def run_pso(
 
     best = min(final_pop, key=lambda ind: float(ind.fitness))
     best_decoded = representation.decode(state, best.candidate)
-    best_f = fitness_vector(best_decoded, state.foods, ctarget=ctarget)
+    best_f = fitness_vector_state(best_decoded, state, ctarget=ctarget)
 
     return {
         "front": [tuple(map(float, best_f))],

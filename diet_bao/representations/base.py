@@ -13,8 +13,13 @@ class EncodingState:
     """Per-position list of valid food indices for a given (foods, edad)."""
 
     per_position: list[list[int]]
+    per_position_sets: list[frozenset[int]]
     foods: list[dict]
     edad: int
+    calories: tuple[float, ...]
+    proteins: tuple[float, ...]
+    carbs: tuple[float, ...]
+    fats: tuple[float, ...]
 
     @property
     def length(self) -> int:
@@ -42,7 +47,17 @@ def build_state(foods: Sequence[dict], edad: int) -> EncodingState:
         per_position.extend([list(slot) for slot in per_day])
     if len(per_position) != DAYS * GENES_PER_DAY:
         raise RuntimeError("Internal domain mapping error")
-    return EncodingState(per_position=per_position, foods=list(foods), edad=int(edad))
+    food_rows = list(foods)
+    return EncodingState(
+        per_position=per_position,
+        per_position_sets=[frozenset(slot) for slot in per_position],
+        foods=food_rows,
+        edad=int(edad),
+        calories=tuple(float(row["calorias"]) for row in food_rows),
+        proteins=tuple(float(row["proteinas"]) for row in food_rows),
+        carbs=tuple(float(row["carbohidratos"]) for row in food_rows),
+        fats=tuple(float(row["grasas"]) for row in food_rows),
+    )
 
 
 class Representation(Protocol):

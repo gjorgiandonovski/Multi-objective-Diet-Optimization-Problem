@@ -18,6 +18,7 @@ and feeds the summary into the main grid.
 """
 from __future__ import annotations
 
+import concurrent.futures
 import itertools
 import time
 from dataclasses import dataclass
@@ -27,8 +28,9 @@ import pandas as pd
 
 from diet_bao.experiment.experiment_loader import (
     AlgorithmConfig,
-    BenchmarkPlan,
     _evaluate_run,
+    _run_single_task,
+    _set_worker_foods,
 )
 from diet_bao.metrics.igd import union_reference_front
 from diet_bao.types import SubjectProfile
@@ -171,12 +173,34 @@ def _config_id(grid: TuningGrid, params: dict[str, Any]) -> str:
     return "_".join(parts)
 
 
+def _config_from_params(grid: TuningGrid, params: dict[str, Any]) -> tuple[AlgorithmConfig, dict[str, Any]]:
+    """Create an AlgorithmConfig and return the non-structural extra params."""
+    params = dict(params)
+    pop_size = int(params.pop("pop_size", grid.fixed.get("pop_size", 50)))
+    max_generations = int(params.pop("max_generations", 50))
+    cfg = AlgorithmConfig(
+        config_id=_config_id(grid, {
+            **params,
+            "pop_size": pop_size,
+            "max_generations": max_generations,
+        }),
+        algorithm=grid.algorithm,
+        representation=grid.representation,
+        constraint_handler=grid.constraint_handler,
+        pop_size=pop_size,
+        max_generations=max_generations,
+        extra=params,
+    )
+    return cfg, params
+
+
 def run_tuning_grid(
     grids: Sequence[TuningGrid],
     subjects: list[SubjectProfile],
     foods: list[dict],
     n_runs: int = 5,
     seed0: int = 1000,
+    n_jobs: int = 1,
 ) -> pd.DataFrame:
     """Run every tuning combination ``n_runs`` times on every subject in
     ``subjects`` and return the tidy long-form DataFrame.
@@ -184,9 +208,14 @@ def run_tuning_grid(
     Hypervolume is computed against a per-subject reference front built from
     the union of all fronts produced across the entire tuning sweep on that
     subject. This is the same protocol as the main experiment.
+
+    Set ``n_jobs`` above 1 to run independent tuning evaluations in parallel.
     """
     if not subjects:
         return pd.DataFrame()
+
+    if n_jobs > 1:
+        return _run_tuning_grid_parallel(grids, subjects, foods, n_runs, seed0, n_jobs)
 
     # --- 1. Schedule and execute every tuning task. -----------------------
     raw: list[dict[str, Any]] = []
@@ -195,23 +224,7 @@ def run_tuning_grid(
         per_subject_runs: list[dict[str, Any]] = []
         for grid in grids:
             for params in _expand_grid(grid):
-                # Build an AlgorithmConfig on the fly. We strip parameters
-                # consumed by AlgorithmConfig itself from the `extra` dict.
-                pop_size = params.pop("pop_size", grid.fixed.get("pop_size", 50))
-                max_generations = params.pop("max_generations", 50)
-                cfg = AlgorithmConfig(
-                    config_id=_config_id(grid, {
-                        **params,
-                        "pop_size": pop_size,
-                        "max_generations": max_generations,
-                    }),
-                    algorithm=grid.algorithm,
-                    representation=grid.representation,
-                    constraint_handler=grid.constraint_handler,
-                    pop_size=pop_size,
-                    max_generations=max_generations,
-                    extra=params,
-                )
+                cfg, extra_params = _config_from_params(grid, params)
                 runner = cfg.runner()
                 kwargs = cfg.kwargs()
                 for r in range(n_runs):
@@ -227,9 +240,9 @@ def run_tuning_grid(
                         "representation": grid.representation,
                         "constraint_handler": grid.constraint_handler,
                         "config_id": cfg.config_id,
-                        "pop_size": pop_size,
-                        "max_generations": max_generations,
-                        **{k: v for k, v in params.items() if k != "extra"},
+                        "pop_size": cfg.pop_size,
+                        "max_generations": cfg.max_generations,
+                        **extra_params,
                         "seed": seed,
                         "runtime_s": float(dt),
                         "f1_best": float(res["best_f"][0]),
@@ -241,6 +254,77 @@ def run_tuning_grid(
         reference_front = union_reference_front(*per_subject_fronts)
 
         for run in per_subject_runs:
+            hv, igd, sp, ds = _evaluate_run(
+                {"front": run["front"]}, reference_front,
+            )
+            run["hypervolume"] = hv
+            run["igd"] = igd
+            run["spacing"] = sp
+            run["delta_spread"] = ds
+            run["front_size"] = len(run["front"])
+            del run["front"]
+            raw.append(run)
+
+    return pd.DataFrame(raw)
+
+
+def _run_tuning_grid_parallel(
+    grids: Sequence[TuningGrid],
+    subjects: list[SubjectProfile],
+    foods: list[dict],
+    n_runs: int,
+    seed0: int,
+    n_jobs: int,
+) -> pd.DataFrame:
+    tasks: list[tuple[int, int, float, AlgorithmConfig, int]] = []
+    meta: list[tuple[TuningGrid, AlgorithmConfig, dict[str, Any]]] = []
+
+    for subject in subjects:
+        for grid in grids:
+            for params in _expand_grid(grid):
+                cfg, extra_params = _config_from_params(grid, params)
+                for r in range(n_runs):
+                    seed = seed0 + r
+                    tasks.append((subject.sujeto_id, subject.edad, float(subject.calorias), cfg, seed))
+                    meta.append((grid, cfg, extra_params))
+
+    per_subject_fronts: dict[int, list[list[tuple[float, ...]]]] = {
+        s.sujeto_id: [] for s in subjects
+    }
+    per_subject_runs: dict[int, list[dict[str, Any]]] = {
+        s.sujeto_id: [] for s in subjects
+    }
+
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=n_jobs,
+        initializer=_set_worker_foods,
+        initargs=(foods,),
+    ) as executor:
+        results = executor.map(_run_single_task, tasks, chunksize=1)
+        for (grid, cfg, extra_params), (subject_id, _cfg, seed, res, dt) in zip(meta, results):
+            front = [tuple(p) for p in res["front"]]
+            per_subject_fronts[subject_id].append(front)
+            per_subject_runs[subject_id].append({
+                "subject_id": subject_id,
+                "algorithm": grid.algorithm,
+                "representation": grid.representation,
+                "constraint_handler": grid.constraint_handler,
+                "config_id": cfg.config_id,
+                "pop_size": cfg.pop_size,
+                "max_generations": cfg.max_generations,
+                **extra_params,
+                "seed": seed,
+                "runtime_s": float(dt),
+                "f1_best": float(res["best_f"][0]),
+                "f2_best": float(res["best_f"][1]),
+                "front": front,
+            })
+
+    raw: list[dict[str, Any]] = []
+    for subject in subjects:
+        subject_id = subject.sujeto_id
+        reference_front = union_reference_front(*per_subject_fronts[subject_id])
+        for run in per_subject_runs[subject_id]:
             hv, igd, sp, ds = _evaluate_run(
                 {"front": run["front"]}, reference_front,
             )

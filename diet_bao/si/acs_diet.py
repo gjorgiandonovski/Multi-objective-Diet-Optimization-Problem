@@ -12,7 +12,7 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence
 
-from diet_bao.fitness import fitness_vector
+from diet_bao.fitness import fitness_vector_state
 from diet_bao.representations import DIRECT_INDEX, Representation
 
 
@@ -84,7 +84,7 @@ def run_acs(
         fitnesses: list[float] = []
         for trail in candidates:
             decoded = [int(c.element[1]) for c in trail]
-            f1, f2 = fitness_vector(decoded, state.foods, ctarget=ctarget)
+            f1, f2 = fitness_vector_state(decoded, state, ctarget=ctarget)
             scalar = (w1 * float(f1)) + (w2 * float(f2))
             fitnesses.append(1.0 / (scalar + 1e-9))
         return fitnesses
@@ -123,7 +123,7 @@ def run_acs(
         best_candidate = None
     else:
         best_candidate = [int(c.element[1]) for c in best_ind.candidate]
-        best_f_raw = fitness_vector(best_candidate, state.foods, ctarget=ctarget)
+        best_f_raw = fitness_vector_state(best_candidate, state, ctarget=ctarget)
         best_f = tuple(map(float, best_f_raw))
 
     return {

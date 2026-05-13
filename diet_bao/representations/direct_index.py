@@ -22,7 +22,7 @@ class DirectIndexRepresentation:
 
     def repair(self, state: EncodingState, candidate, random: _random.Random) -> list[int]:
         out = list(candidate)
-        for i, domain in enumerate(state.per_position):
-            if out[i] not in domain:
+        for i, (domain, domain_set) in enumerate(zip(state.per_position, state.per_position_sets)):
+            if int(out[i]) not in domain_set:
                 out[i] = domain[random.randrange(len(domain))]
         return out

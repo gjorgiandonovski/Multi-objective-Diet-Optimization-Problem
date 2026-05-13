@@ -13,9 +13,13 @@ for reproducibility against earlier experiment outputs.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import Sequence
 
 from diet_bao.encoding import DAYS, GENES_PER_DAY, INDIVIDUAL_LENGTH
+
+if TYPE_CHECKING:
+    from diet_bao.representations.base import EncodingState
 
 try:
     from inspyred.ec.emo import Pareto
@@ -82,6 +86,75 @@ def fitness_vector(
     f1 = sum(abs(day["calorias"] - float(ctarget)) for day in daily)
     f2 = sum(_macro_deviation_for_day(day) for day in daily)
     return float(f1), float(f2)
+
+
+def fitness_vector_from_arrays(
+    individual: Sequence[int],
+    calories: Sequence[float],
+    proteins: Sequence[float],
+    carbs: Sequence[float],
+    fats: Sequence[float],
+    ctarget: float,
+) -> tuple[float, float]:
+    """Fast per-day fitness using precomputed nutrient arrays.
+
+    This avoids repeated dict lookups in the inner evolutionary loop while
+    preserving the public ``fitness_vector`` behaviour.
+    """
+    if len(individual) != INDIVIDUAL_LENGTH:
+        raise ValueError("Invalid individual length")
+
+    target = float(ctarget)
+    f1 = 0.0
+    f2 = 0.0
+
+    for start in range(0, INDIVIDUAL_LENGTH, GENES_PER_DAY):
+        kcal = 0.0
+        pro = 0.0
+        carb = 0.0
+        fat = 0.0
+
+        for pos in range(start, start + GENES_PER_DAY):
+            idx = int(individual[pos])
+            kcal += calories[idx]
+            pro += proteins[idx]
+            carb += carbs[idx]
+            fat += fats[idx]
+
+        f1 += abs(kcal - target)
+
+        kcal_pro = pro * 4.0
+        kcal_carb = carb * 4.0
+        kcal_fat = fat * 9.0
+        total = kcal_pro + kcal_carb + kcal_fat
+        if total <= 0:
+            f2 += _WORST_DAILY_MACRO_DEV
+        else:
+            pct_carb = 100.0 * (kcal_carb / total)
+            pct_fat = 100.0 * (kcal_fat / total)
+            pct_pro = 100.0 * (kcal_pro / total)
+            f2 += (
+                abs(pct_carb - CARB_TARGET)
+                + abs(pct_fat - FAT_TARGET)
+                + abs(pct_pro - PROTEIN_TARGET)
+            )
+
+    return float(f1), float(f2)
+
+
+def fitness_vector_state(
+    individual: Sequence[int],
+    state: "EncodingState",
+    ctarget: float,
+) -> tuple[float, float]:
+    return fitness_vector_from_arrays(
+        individual,
+        state.calories,
+        state.proteins,
+        state.carbs,
+        state.fats,
+        ctarget,
+    )
 
 
 def fitness_vector_weekly(

@@ -11,7 +11,7 @@ import random
 from typing import Any, Sequence
 
 from diet_bao.constraints import REPAIR, ConstraintHandler
-from diet_bao.fitness import fitness_vector
+from diet_bao.fitness import fitness_vector_state
 from diet_bao.representations import DIRECT_INDEX, Representation
 
 
@@ -29,7 +29,7 @@ def _make_evaluator(
         out = []
         for raw in candidates:
             decoded = representation.decode(state, raw)
-            f1, f2 = fitness_vector(decoded, state.foods, ctarget=ctarget)
+            f1, f2 = fitness_vector_state(decoded, state, ctarget=ctarget)
             _, (f1c, f2c) = handler.process(decoded, state, ctarget, (f1, f2), rng)
             out.append(Pareto([float(f1c), float(f2c)]))
         return out
@@ -46,8 +46,8 @@ def _make_mutation(representation: Representation, state, rate_key: str = "mutat
         for cand in candidates:
             mutant = list(cand)
             if representation.name == "direct_index":
-                for i, domain in enumerate(state.per_position):
-                    if mutant[i] not in domain or random.random() < rate:
+                for i, (domain, domain_set) in enumerate(zip(state.per_position, state.per_position_sets)):
+                    if int(mutant[i]) not in domain_set or random.random() < rate:
                         mutant[i] = domain[random.randrange(len(domain))]
             else:
                 for i in range(len(mutant)):
@@ -82,7 +82,7 @@ def _make_local_search(representation: Representation, state, ctarget: float, ra
 
             # Evaluate current candidate
             decoded = representation.decode(state, cand)
-            f1, f2 = fitness_vector(decoded, state.foods, ctarget=ctarget)
+            f1, f2 = fitness_vector_state(decoded, state, ctarget=ctarget)
 
             # Generate 1 random neighbor
             neighbor = list(cand)
@@ -106,7 +106,7 @@ def _make_local_search(representation: Representation, state, ctarget: float, ra
 
             neighbor = representation.repair(state, neighbor, random)
             n_decoded = representation.decode(state, neighbor)
-            n_f1, n_f2 = fitness_vector(n_decoded, state.foods, ctarget=ctarget)
+            n_f1, n_f2 = fitness_vector_state(n_decoded, state, ctarget=ctarget)
 
             # Pareto dominance: if neighbor strictly dominates, replace candidate
             # Or if it's equal but gives a better scalar sum
@@ -186,7 +186,7 @@ def run_nsga2(
 
     best = min(final_pop, key=lambda ind: float(ind.fitness.values[0]) + float(ind.fitness.values[1]))
     best_decoded = representation.decode(state, best.candidate)
-    best_f = fitness_vector(best_decoded, state.foods, ctarget=ctarget)
+    best_f = fitness_vector_state(best_decoded, state, ctarget=ctarget)
 
     return {
         "front": front,

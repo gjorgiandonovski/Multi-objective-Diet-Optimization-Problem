@@ -58,21 +58,38 @@ smoke_test.py              short end-to-end pipeline check
 ## Setup
 
 1. Restore `food_database_dump.sql` (from the NutritionPlanning repository) into MySQL or MariaDB.
-2. Copy `.env.example` to `.env` and set `DB_PASSWORD`.
-3. Create a virtual environment and install the package:
+2. Copy `.env.example` to `.env` and set the MySQL credentials.
+3. Create a virtual environment and install the package.
+
+   macOS/Linux:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   pip install -e .
+   ```
+
+   Windows PowerShell:
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
    pip install -r requirements.txt
    pip install -e .
    ```
-4. Run the sanity checks:
-   ```powershell
+4. Check that the `.env` credentials work against MySQL before running the full smoke test:
+   ```bash
+   set -a
+   source .env
+   set +a
+   mysql -u "$DB_USER" -p -h "$DB_HOST" -P "${DB_PORT:-3306}" "$DB_NAME"
+   ```
+5. Run the sanity checks:
+   ```bash
    python verify_db.py
    python smoke_test.py
    pytest tests/ -q
    ```
-5. Open `main.ipynb` and run all cells. Outputs (CSVs and PNGs) are written to `experiments/`.
+6. Open `main.ipynb` and run all cells. Outputs (CSVs and PNGs) are written to `experiments/`.
 
 ## Algorithms and their mapping to the course syllabus
 

@@ -36,7 +36,7 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence
 
-from diet_bao.fitness import fitness_vector
+from diet_bao.fitness import fitness_vector_state
 from diet_bao.representations import DIRECT_INDEX, Representation
 
 
@@ -140,7 +140,7 @@ def run_aco(
     def evaluator(candidates: list, args: dict) -> list[float]:
         scores: list[float] = []
         for cand in candidates:
-            f1, f2 = fitness_vector(cand, state.foods, ctarget=ctarget)
+            f1, f2 = fitness_vector_state(cand, state, ctarget=ctarget)
             scores.append(w1 * float(f1) + w2 * float(f2))
         return scores
 
@@ -176,8 +176,8 @@ def run_aco(
             if scalar < _best["scalar"]:
                 _best["scalar"] = scalar
                 _best["candidate"] = list(ind.candidate)
-                _best["f"] = fitness_vector(
-                    ind.candidate, state.foods, ctarget=ctarget
+                _best["f"] = fitness_vector_state(
+                    ind.candidate, state, ctarget=ctarget
                 )
 
         best_this_gen = min(float(ind.fitness) for ind in population)
