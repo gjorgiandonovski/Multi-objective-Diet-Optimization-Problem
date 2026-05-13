@@ -62,23 +62,24 @@ def test_paes_runs_for_every_combo(rep, handler):
     _assert_result(res)
 
 
-@pytest.mark.parametrize("rep", [DIRECT_INDEX, RANDOM_KEY])
-def test_pso_scalarized_runs(rep):
-    from diet_bao.si.pso_diet import run_pso
+def test_mopso_runs_random_key():
+    from diet_bao.si.mopso_diet import run_mopso
 
-    res = run_pso(
+    res = run_mopso(
         _foods(), edad=25, ctarget=2200.0,
-        representation=rep, pop_size=15, max_generations=8, seed=42,
+        representation=RANDOM_KEY, pop_size=15, max_generations=8, seed=42,
     )
-    _assert_result(res, has_front=False)
+    _assert_result(res)
+    assert len(res["front"]) > 1
 
 
-def test_acs_scalarized_runs_direct_index():
+def test_paco_runs_direct_index():
     from diet_bao.representations import DIRECT_INDEX
-    from diet_bao.si.acs_diet import run_acs
+    from diet_bao.si.paco_diet import run_paco
 
-    res = run_acs(
+    res = run_paco(
         _foods(), edad=25, ctarget=2200.0,
         representation=DIRECT_INDEX, pop_size=15, max_generations=8, seed=42,
     )
-    _assert_result(res, has_front=False)
+    _assert_result(res)
+    assert len(res["front"]) > 1

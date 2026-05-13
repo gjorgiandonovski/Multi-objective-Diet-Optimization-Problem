@@ -25,16 +25,16 @@ from diet_bao.metrics import (
 )
 from diet_bao.metrics.igd import union_reference_front
 from diet_bao.representations import ALL_REPRESENTATIONS
-from diet_bao.si.acs_diet import run_acs
-from diet_bao.si.pso_diet import run_pso
+from diet_bao.si.mopso_diet import run_mopso
+from diet_bao.si.paco_diet import run_paco
 from diet_bao.types import SubjectProfile
 
 
 ALGORITHM_RUNNERS: dict[str, Callable[..., dict[str, Any]]] = {
     "NSGA-II": run_nsga2,
     "PAES": run_paes,
-    "PSO-scalar": run_pso,
-    "ACS": run_acs,
+    "MOPSO": run_mopso,
+    "P-ACO": run_paco,
 }
 
 
@@ -104,7 +104,10 @@ def default_plan(n_runs: int = 30, seed0: int = 100) -> BenchmarkPlan:
         AlgorithmConfig("nsga2_di_death", "NSGA-II", "direct_index", "death_penalty", 80, 80),
         AlgorithmConfig("paes_di_repair", "PAES", "direct_index", "repair", 1, 800,
                         extra={"max_archive_size": 80, "mutation_rate": 0.1}),
-        AlgorithmConfig("pso_scalar_rk", "PSO-scalar", "random_key", "repair", 60, 80),
+        AlgorithmConfig("mopso_rk", "MOPSO", "random_key", "none", 60, 80,
+                        extra={"max_archive_size": 80, "leader_method": "sigma"}),
+        AlgorithmConfig("paco_di", "P-ACO", "direct_index", "none", 40, 80,
+                        extra={"max_archive_size": 80}),
     ]
     return BenchmarkPlan(configs=configs, n_runs=n_runs, seed0=seed0)
 

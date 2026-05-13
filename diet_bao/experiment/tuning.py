@@ -4,7 +4,7 @@ The tuning protocol is deliberately small but defensible:
 
 * For each algorithm we define a 2--3 dimensional grid that varies the
   hyperparameters with the largest expected effect (population, generations,
-  mutation rate, archive size, swarm weights).
+  mutation rate, archive size, leader choice, and pheromone dynamics).
 * Every configuration in the grid is replicated `n_runs` times (default 5)
   on a small number of representative subjects (default subjects 1 and 4 --
   one large caloric target and one small one).
@@ -76,30 +76,28 @@ def default_tuning_grids() -> list[TuningGrid]:
             fixed={"pop_size": 1},
         ),
         TuningGrid(
-            algorithm="PSO-scalar",
+            algorithm="MOPSO",
             representation="random_key",
-            constraint_handler="repair",
+            constraint_handler="none",
             params={
                 "pop_size": [30, 60],
                 "max_generations": [40, 80],
-                # Scalarisation weights (w1 * f1 + w2 * f2). Because f1 dwarfs
-                # f2 numerically, weights that favour f2 are explored too.
-                "w1w2": [(1.0, 1.0), (1.0, 5.0), (1.0, 10.0)],
+                "max_archive_size": [40, 80],
+                "c1c2": [1.5, 2.0],
             },
-            fixed={},
+            fixed={"inertia": 0.4, "leader_method": "sigma"},
         ),
         TuningGrid(
-            algorithm="ACS",
+            algorithm="P-ACO",
             representation="direct_index",
             constraint_handler="none",
             params={
                 "pop_size": [30, 60],
                 "max_generations": [40, 80],
+                "max_archive_size": [40, 80],
                 "evaporation_rate": [0.05, 0.1],
-                "learning_rate": [0.05, 0.1],
-                "w1w2": [(1.0, 5.0)],
             },
-            fixed={"initial_pheromone": 1.0},
+            fixed={"alpha": 1.0, "initial_pheromone": 1.0},
         ),
     ]
 
@@ -141,8 +139,10 @@ def _config_id(grid: TuningGrid, params: dict[str, Any]) -> str:
         "w2",
         "max_archive_size",
         "evaporation_rate",
-        "learning_rate",
+        "alpha",
+        "q",
         "initial_pheromone",
+        "leader_method",
     ):
         if k not in params:
             continue
@@ -165,10 +165,14 @@ def _config_id(grid: TuningGrid, params: dict[str, Any]) -> str:
             parts.append(f"w2-{str(v).replace('.', '')}")
         elif k == "evaporation_rate":
             parts.append(f"rho{str(v).replace('.', '')}")
-        elif k == "learning_rate":
-            parts.append(f"lr{str(v).replace('.', '')}")
+        elif k == "alpha":
+            parts.append(f"a{str(v).replace('.', '')}")
+        elif k == "q":
+            parts.append(f"q{str(v).replace('.', '')}")
         elif k == "initial_pheromone":
             parts.append(f"t0{str(v).replace('.', '')}")
+        elif k == "leader_method":
+            parts.append(str(v))
         # c2 and other already collapsed by c1.
     return "_".join(parts)
 
@@ -350,8 +354,8 @@ def best_configurations(tuning_df: pd.DataFrame) -> pd.DataFrame:
 
     keep_cols = [
         "algorithm", "config_id", "pop_size", "max_generations",
-        "mutation_rate", "inertia", "c1", "c2", "w1", "w2", "max_archive_size",
-        "evaporation_rate", "learning_rate", "initial_pheromone",
+        "mutation_rate", "inertia", "c1", "c2", "max_archive_size",
+        "evaporation_rate", "alpha", "q", "initial_pheromone", "leader_method",
     ]
     keep_cols = [c for c in keep_cols if c in tuning_df.columns]
 

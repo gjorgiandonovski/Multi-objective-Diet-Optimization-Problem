@@ -12,7 +12,7 @@ A weekly meal plan (7 days x 5 meals x structured slots) is built from a real fo
 | Requirement | Implementation |
 |---|---|
 | At least 1 evolutionary algorithm | `diet_bao/ea/nsga2_diet.py`, `diet_bao/ea/paes_diet.py` |
-| At least 1 swarm intelligence algorithm | `diet_bao/si/pso_diet.py` (scalarised) |
+| At least 1 swarm intelligence algorithm | `diet_bao/si/mopso_diet.py`, `diet_bao/si/paco_diet.py` |
 | Different representations compared | `diet_bao/representations/{direct_index,random_key}.py` |
 | Different constraint handlers compared | `diet_bao/constraints/{repair,penalty,death_penalty}.py` |
 | Multi-objective metrics | `diet_bao/metrics/{hypervolume,igd,spread}.py` |
@@ -20,7 +20,7 @@ A weekly meal plan (7 days x 5 meals x structured slots) is built from a real fo
 | Quality + runtime comparison | `summarize_results()` plus boxplots in `main.ipynb` |
 | Convergence + diversity plots | `diet_bao/experiment/visualization.py` |
 | Statistical significance tests | `stac/stat_tests.py` (Wilcoxon signed-ranks, Friedman aligned ranks, Shaffer + Holm corrections) |
-| inspyred library | NSGA-II and PAES wrap `inspyred.ec.emo`. PSO wraps `inspyred.swarm.PSO`. |
+| inspyred library | NSGA-II and PAES wrap `inspyred.ec.emo`; MOPSO and P-ACO use project-native Pareto archives. |
 
 Optional advanced techniques (allowed by the assignment) are implemented:
 
@@ -41,7 +41,9 @@ diet_bao/
     nsga2_diet.py          NSGA-II via inspyred
     paes_diet.py           PAES via inspyred
   si/
-    pso_diet.py            scalarised PSO via inspyred
+    mopso_diet.py          Pareto MOPSO with Sigma leader selection
+    paco_diet.py           Pareto ACO with pheromone archive reinforcement
+    pareto_archive.py      dominance filtering + crowding-distance pruning
   experiment/
     experiment_loader.py   AlgorithmConfig, BenchmarkPlan, run_all_subjects
     visualization.py       convergence, Pareto, diversity plots
@@ -93,6 +95,7 @@ smoke_test.py              short end-to-end pipeline check
 
 - **NSGA-II** — Topic 2 (genetic algorithms) and Topic 4 (multi-objective). Dominance + crowding-distance selection.
 - **PAES** — Topic 4 (multi-objective). (1+1)-ES with adaptive grid archive (Knowles and Corne, 2000). Contrasts with NSGA-II by using archive-based selection instead of population-dominance selection.
-- **Scalarised PSO** — Topic 3.1 (PSO) used as a single-objective baseline via weighted sum.
+- **MOPSO** — Topic 3.1 (PSO) adapted to multi-objective optimisation with an external archive, Sigma leader selection and random-leader fallback.
+- **P-ACO** — Topic 3.2 (ACO) adapted to multi-objective optimisation with per-slot pheromones, external archive reinforcement and crowding-distance pruning.
 
-ACO (Topic 3.2) is not included. A simple memetic NSGA-II variant (Topic 7.1) is implemented as an optional extension.
+A simple memetic NSGA-II variant (Topic 7.1) is implemented as an optional extension.

@@ -27,11 +27,12 @@ def test_default_plan_has_at_least_one_config_per_algorithm():
     algorithms = {c.algorithm for c in plan.configs}
     assert "NSGA-II" in algorithms
     assert "PAES" in algorithms
-    assert "PSO-scalar" in algorithms
+    assert "MOPSO" in algorithms
+    assert "P-ACO" in algorithms
 
 
-def test_algorithm_config_kwargs_for_pso_drops_constraint_handler():
-    cfg = AlgorithmConfig("test_pso", "PSO-scalar", "random_key", "repair", 10, 5)
+def test_algorithm_config_kwargs_for_swarm_drops_constraint_handler():
+    cfg = AlgorithmConfig("test_mopso", "MOPSO", "random_key", "none", 10, 5)
     kwargs = cfg.kwargs()
     assert "constraint_handler" not in kwargs
     assert kwargs["pop_size"] == 10

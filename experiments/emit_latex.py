@@ -68,10 +68,11 @@ def main() -> int:
         "nsga2_di_penalty":  "\\texttt{nsga2\\_di\\_penalty}",
         "nsga2_di_death":    "\\texttt{nsga2\\_di\\_death}",
         "paes_di_repair":    "\\texttt{paes\\_di\\_repair}",
-        "pso_scalar_rk":     "\\texttt{pso\\_scalar\\_rk}",
+        "mopso_rk":          "\\texttt{mopso\\_rk}",
+        "paco_di":           "\\texttt{paco\\_di}",
     }
     order = ["nsga2_rk_repair", "nsga2_di_repair", "nsga2_di_penalty", "nsga2_di_death",
-             "paes_di_repair", "pso_scalar_rk"]
+             "paes_di_repair", "mopso_rk", "paco_di"]
     for cid in order:
         if cid not in agg.index:
             continue
