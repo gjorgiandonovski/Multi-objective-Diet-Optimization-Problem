@@ -32,13 +32,8 @@ def test_fitness_vector_weekly_returns_nonnegative_pair():
     assert f2 >= 0.0
 
 
-def test_proportional_macro_split_hits_unavoidable_floor():
-    """The assignment macro targets (55 + 27.5 + 22.5) sum to 105%, not 100%.
-
-    No food / diet can score 0 on f2 -- macro percentages always sum to 100,
-    and the L1 deviation against a 105-summing target has a fixed floor of
-    5% per day, which is 35.0 over the seven-day plan.
-    """
+def test_proportional_macro_split_can_hit_zero_deviation():
+    """The corrected assignment macro targets sum to 100%, so f2 can reach 0."""
     pro_g = PROTEIN_TARGET / 4.0
     carb_g = CARB_TARGET / 4.0
     fat_g = FAT_TARGET / 9.0
@@ -54,7 +49,7 @@ def test_proportional_macro_split_hits_unavoidable_floor():
     individual = list(range(INDIVIDUAL_LENGTH))
     f1, f2 = fitness_vector(individual, foods, ctarget=11 * 100.0)
     assert f1 == pytest.approx(0.0, abs=1e-6)
-    assert f2 == pytest.approx(35.0, abs=1e-6)
+    assert f2 == pytest.approx(0.0, abs=1e-6)
 
 
 def test_per_day_fitness_differs_from_weekly_when_imbalanced():

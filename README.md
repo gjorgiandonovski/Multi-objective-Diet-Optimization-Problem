@@ -5,9 +5,7 @@ Project for the Bioinspired Algorithms for Optimization (BAO) course.
 A weekly meal plan (7 days x 5 meals x structured slots) is built from a real food database to simultaneously minimise:
 
 - **f1**: per-day calorie deviation from the user's target.
-- **f2**: per-day macronutrient deviation from the assignment-specified split (55% carbohydrates, 27.5% fat, 22.5% protein).
-
-The macro targets sum to 105%; consequently the L1 deviation in f2 has an unavoidable lower bound of 5% per day (35 over the week). This is documented behaviour, not a defect.
+- **f2**: per-day macronutrient deviation from the assignment-specified split (50% carbohydrates, 27.5% fat, 22.5% protein).
 
 ## Coverage of the assignment requirements
 

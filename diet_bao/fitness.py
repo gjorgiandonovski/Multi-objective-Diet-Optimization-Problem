@@ -6,7 +6,7 @@ Two objectives, both minimised:
 
 Both are computed PER DAY and summed, matching the assignment wording
 ("Adjust DAILY calories...", "Adjust DAILY carbohydrates so their percentage
-is 55%...").
+is 50%...").
 
 The legacy week-aggregate macro fitness is preserved as fitness_vector_weekly
 for reproducibility against earlier experiment outputs.
@@ -26,7 +26,7 @@ try:
 except Exception:  # pragma: no cover
     Pareto = None  # type: ignore
 
-CARB_TARGET = 55.0
+CARB_TARGET = 50.0
 FAT_TARGET = 27.5
 PROTEIN_TARGET = 22.5
 
@@ -80,7 +80,7 @@ def fitness_vector(
     """Per-day fitness, matching the assignment specification.
 
     f1 = sum over days of |day_kcal - target_kcal|
-    f2 = sum over days of (|carb%-55| + |fat%-27.5| + |pro%-22.5|)
+    f2 = sum over days of (|carb%-50| + |fat%-27.5| + |pro%-22.5|)
     """
     daily = _daily_totals(individual, foods)
     f1 = sum(abs(day["calorias"] - float(ctarget)) for day in daily)
