@@ -34,6 +34,15 @@ def test_update_archive_crowding_prunes_to_max_size():
     assert (9.0, 1.0) in {tuple(e["fitness"]) for e in archive}
 
 
+def test_update_archive_accepts_integer_valued_float_max_size():
+    entries = [
+        {"candidate": [i], "fitness": (float(i), float(10 - i))}
+        for i in range(10)
+    ]
+    archive = update_archive([], entries, max_size=4.0)
+    assert len(archive) == 4
+
+
 def test_best_by_sum_returns_representative_point():
     entries = [
         {"candidate": [0], "fitness": (10.0, 1.0)},

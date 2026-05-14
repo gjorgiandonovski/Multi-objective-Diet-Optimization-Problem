@@ -97,17 +97,24 @@ def load_real_dataset() -> tuple[list[dict], list[SubjectProfile]]:
 
 def default_plan(n_runs: int = 30, seed0: int = 100) -> BenchmarkPlan:
     """Reference benchmark plan matching the report's main grid."""
+    nsga_extra = {"mutation_rate": 0.2}
     configs = [
-        AlgorithmConfig("nsga2_di_repair", "NSGA-II", "direct_index", "repair", 80, 80),
-        AlgorithmConfig("nsga2_rk_repair", "NSGA-II", "random_key", "repair", 80, 80),
-        AlgorithmConfig("nsga2_di_penalty", "NSGA-II", "direct_index", "penalty", 80, 80),
-        AlgorithmConfig("nsga2_di_death", "NSGA-II", "direct_index", "death_penalty", 80, 80),
+        AlgorithmConfig("nsga2_di_repair", "NSGA-II", "direct_index", "repair", 80, 80,
+                        extra=dict(nsga_extra)),
+        AlgorithmConfig("nsga2_rk_repair", "NSGA-II", "random_key", "repair", 80, 80,
+                        extra=dict(nsga_extra)),
+        AlgorithmConfig("nsga2_di_penalty", "NSGA-II", "direct_index", "penalty", 80, 80,
+                        extra=dict(nsga_extra)),
+        AlgorithmConfig("nsga2_di_death", "NSGA-II", "direct_index", "death_penalty", 80, 80,
+                        extra=dict(nsga_extra)),
         AlgorithmConfig("paes_di_repair", "PAES", "direct_index", "repair", 1, 800,
-                        extra={"max_archive_size": 80, "mutation_rate": 0.1}),
-        AlgorithmConfig("mopso_rk", "MOPSO", "random_key", "none", 60, 80,
-                        extra={"max_archive_size": 80, "leader_method": "sigma"}),
-        AlgorithmConfig("paco_di", "P-ACO", "direct_index", "none", 40, 80,
-                        extra={"max_archive_size": 80}),
+                        extra={"max_archive_size": 40, "mutation_rate": 0.1}),
+        AlgorithmConfig("mopso_rk", "MOPSO", "random_key", "none", 30, 80,
+                        extra={"max_archive_size": 40, "inertia": 0.4,
+                               "c1": 2.0, "c2": 2.0, "leader_method": "sigma"}),
+        AlgorithmConfig("paco_di", "P-ACO", "direct_index", "none", 60, 40,
+                        extra={"max_archive_size": 40, "evaporation_rate": 0.1,
+                               "alpha": 1.0, "initial_pheromone": 1.0}),
     ]
     return BenchmarkPlan(configs=configs, n_runs=n_runs, seed0=seed0)
 

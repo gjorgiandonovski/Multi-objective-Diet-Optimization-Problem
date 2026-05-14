@@ -2,10 +2,22 @@
 from __future__ import annotations
 
 import math
+import operator
 from typing import Any, Iterable
 
 
 ArchiveEntry = dict[str, Any]
+
+
+def _coerce_archive_limit(max_size: Any) -> int:
+    """Accept int-like archive sizes, including pandas/numpy integer floats."""
+    try:
+        return operator.index(max_size)
+    except TypeError:
+        value = float(max_size)
+        if not math.isfinite(value) or not value.is_integer():
+            raise ValueError("max_size must be an integer-valued archive size") from None
+        return int(value)
 
 
 def dominates(a: tuple[float, ...], b: tuple[float, ...]) -> bool:
@@ -78,6 +90,7 @@ def nondominated(entries: Iterable[ArchiveEntry]) -> list[ArchiveEntry]:
 
 def prune_by_crowding(entries: list[ArchiveEntry], max_size: int) -> list[ArchiveEntry]:
     """Keep a bounded, diversity-preserving archive."""
+    max_size = _coerce_archive_limit(max_size)
     if max_size <= 0:
         return []
     if len(entries) <= max_size:

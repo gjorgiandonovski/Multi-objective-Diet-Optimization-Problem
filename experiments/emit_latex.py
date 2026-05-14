@@ -117,28 +117,46 @@ def main() -> int:
     if tb.exists():
         print("% --- tab:tuning_winners ---")
         best = pd.read_csv(tb)
-        first = best.groupby("algorithm").head(1)
-        for _, r in first.iterrows():
+        first = best.groupby("algorithm").head(1).set_index("algorithm")
+        algo_order = ["NSGA-II", "PAES", "MOPSO", "P-ACO"]
+        for algo in [a for a in algo_order if a in first.index]:
+            r = first.loc[algo]
             cells = []
             if "pop_size" in r and pd.notna(r["pop_size"]):
                 cells.append(f"pop={int(r['pop_size'])}")
             if "max_generations" in r and pd.notna(r["max_generations"]):
                 cells.append(f"gen={int(r['max_generations'])}")
+            if "max_archive_size" in r and pd.notna(r["max_archive_size"]):
+                cells.append(f"archive={int(r['max_archive_size'])}")
             if "mutation_rate" in r and pd.notna(r["mutation_rate"]):
                 cells.append(f"mut={r['mutation_rate']}")
             if "inertia" in r and pd.notna(r["inertia"]):
-                cells.append(f"$w$={r['inertia']}")
-            if "c1" in r and pd.notna(r["c1"]):
-                cells.append(f"$c_1$={r['c1']}")
+                cells.append(f"$w={r['inertia']}$")
+            if (
+                "c1" in r and "c2" in r
+                and pd.notna(r["c1"]) and pd.notna(r["c2"])
+                and float(r["c1"]) == float(r["c2"])
+            ):
+                cells.append(f"$c_1=c_2={r['c1']}$")
+            elif "c1" in r and pd.notna(r["c1"]):
+                cells.append(f"$c_1={r['c1']}$")
+            if "c2" in r and pd.notna(r["c2"]) and not (
+                "c1" in r and pd.notna(r["c1"]) and float(r["c1"]) == float(r["c2"])
+            ):
+                cells.append(f"$c_2={r['c2']}$")
             if "w1" in r and pd.notna(r["w1"]):
-                cells.append(f"$w_1$={r['w1']}")
+                cells.append(f"$w_1={r['w1']}$")
             if "w2" in r and pd.notna(r["w2"]):
-                cells.append(f"$w_2$={r['w2']}")
-            if "max_archive_size" in r and pd.notna(r["max_archive_size"]):
-                cells.append(f"archive={int(r['max_archive_size'])}")
+                cells.append(f"$w_2={r['w2']}$")
+            if "evaporation_rate" in r and pd.notna(r["evaporation_rate"]):
+                cells.append(f"$\\rho={r['evaporation_rate']}$")
+            if "alpha" in r and pd.notna(r["alpha"]):
+                cells.append(f"$\\alpha={r['alpha']}$")
+            if "initial_pheromone" in r and pd.notna(r["initial_pheromone"]):
+                cells.append(f"$\\tau_0={r['initial_pheromone']}$")
             note = ", ".join(cells)
-            print(f"{r['algorithm']:10s} & {note} & "
-                  f"{r['hv_mean']:.0f} & {r['runtime_mean']:.2f} \\\\")
+            print(f"{algo:10s} & {note} & tuning winner & "
+                  f"{_fmt(r['hv_mean'], 'big')} & {_fmt(r['runtime_mean'], 'decimal')} \\\\")
     return 0
 
 
