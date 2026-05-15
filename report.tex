@@ -38,6 +38,7 @@
 \begin{titlepage}
 \centering
 \vspace*{2cm}
+
 {\Huge\bfseries Multi-objective Diet Optimization Problem\par}
 \vspace{0.4cm}
 {\Large Bioinspired Algorithms for Optimization\par}
@@ -45,25 +46,26 @@
 {\large Group Project Assignment\par}
 \vspace{2.5cm}
 
-{\large\bfseries Group identifier: PGN-XX\par} % TODO: replace XX with your PGN number
+{\large\bfseries Group Identifier: 11\par}
 \vspace{1.5cm}
 
-{\large\bfseries Members and contribution hours\par}
+{\large\bfseries Members and Contribution\par}
 \vspace{0.6cm}
+
 \begin{tabular}{lr}
 \toprule
-\textbf{Member} & \textbf{Hours} \\
+\textbf{Member} & \textbf{Contribution (\%)} \\
 \midrule
-Ismael De Los Santos     & XX h \\ % TODO
-Member 2 (Full Name)     & XX h \\ % TODO
-Member 3 (Full Name)     & XX h \\ % TODO
+Ismael De Los Santos & 50\% \\
+Gjorgi Andonovski & 50\% \\
 \bottomrule
 \end{tabular}
 
-\vspace{0.6cm}
-\textit{The grade will be proportional to the implication of each member.}
+\vspace{1.5cm}
+{\large\bfseries Professors: Cristian Ramírez Atencia, Ángel Panizo LLedot\par}
+
 \vfill
-{\large Universidad Politecnica de Madrid \par}
+{\large Universidad Politécnica de Madrid\par}
 {\large \today \par}
 \end{titlepage}
 
@@ -109,14 +111,14 @@ A candidate solution is a \emph{weekly meal plan} for a single user, spanning 7 
 This yields 11 slots per day, totalling $77$ slots per weekly plan. A solution is thus represented as a vector $\mathbf{x} \in \mathbb{N}^{77}$, where each decision variable $x_j$ ($j \in \{1, \dots, 77\}$) is the index of the food item assigned to slot~$j$.
 
 \subsubsection{Admissible Food Sets and Search Space}
-Let $\mathcal{F} = \{1, \dots, 2616\}$ denote the complete catalogue of food indices. Foods are categorised via hierarchical group prefixes (e.g.\ \texttt{FA} for fruits, \texttt{A} for cereals). To ensure culinary and nutritional coherence, each slot $j$ is restricted to a pre-computed \emph{admissible set} $D_j \subseteq \mathcal{F}$, dynamically adjusted based on the user's age:
+Let $\mathcal{F} = \{1, \dots, 2616\}$ denote the complete catalogue of food indices. Foods are categorised via hierarchical group prefixes (e.g.\ {FA} for fruits, {A} for cereals). To ensure culinary and nutritional coherence, each slot $j$ is restricted to a pre-computed \emph{admissible set} $D_j \subseteq \mathcal{F}$, dynamically adjusted based on the user's age:
 
 \begin{itemize}[leftmargin=*, itemsep=0.2em]
-    \item \textbf{Snacks:} Restricted to fruits (\texttt{F}) and sugars (\texttt{S}).
-    \item \textbf{Breakfast Drinks:} Dairy (\texttt{BA}, \texttt{BH}), infusions/powders (\texttt{PA}) and juices (\texttt{FE}, \texttt{FC}).
-    \item \textbf{Breakfast Foods:} Cereals (\texttt{A}), eggs (\texttt{C}), fruits (\texttt{FA}) and bacon (\texttt{MAA}), explicitly excluding heavy carbs such as rice, pasta or pizza (\texttt{AC}, \texttt{AD}, \texttt{AE}).
-    \item \textbf{Lunch/Dinner Drinks:} General beverages (\texttt{P}, \texttt{FC}, \texttt{FE}); alcoholic drinks (\texttt{Q}) are admitted only if age~$\ge 18$.
-    \item \textbf{Lunch/Dinner Foods:} Substantive cereals (\texttt{AC, AD, AE, AF}) and any item not classified under breakfast/snack-exclusive categories.
+    \item \textbf{Snacks:} Restricted to fruits ({F}) and sugars ({S}).
+    \item \textbf{Breakfast Drinks:} Dairy ({BA}, {BH}), infusions/powders ({PA}) and juices ({FE}, {FC}).
+    \item \textbf{Breakfast Foods:} Cereals ({A}), eggs ({C}), fruits ({FA}) and bacon ({MAA}), explicitly excluding heavy carbs such as rice, pasta or pizza ({AC}, {AD}, {AE}).
+    \item \textbf{Lunch/Dinner Drinks:} General beverages ({P}, {FC}, {FE}); alcoholic drinks ({Q}) are admitted only if age~$\ge 18$.
+    \item \textbf{Lunch/Dinner Foods:} Substantive cereals ({AC, AD, AE, AF}) and any item not classified under breakfast/snack-exclusive categories.
 \end{itemize}
 
 A weekly plan $\mathbf{x}$ is \emph{feasible} iff $x_j \in D_j$ for all $j$. The feasible search space has size $\prod_{j=1}^{77} |D_j|$; since $|D_j|$ ranges from dozens to thousands of items, the total number of combinations is astronomically large, reinforcing the need for stochastic search.
@@ -154,7 +156,7 @@ Four metaheuristics span both course families. All four return Pareto archives, 
 \subsection{Codifications}
 \label{sec:codifications}
 
-Two encodings are implemented under a common \texttt{Representation} interface (\texttt{diet\_bao/representations}). NSGA-II uses both; PAES and P-ACO use direct-index only; MOPSO uses random-key only (required by its velocity update).
+Two encodings are implemented under a common {Representation} interface ({diet\_bao/representations}). NSGA-II uses both; PAES and P-ACO use direct-index only; MOPSO uses random-key only (required by its velocity update).
 
 \begin{itemize}[leftmargin=1.2em, itemsep=0.15em]
 \item \textbf{Direct-index encoding.} A weekly plan is a length-77 integer vector, one gene per slot. Gene $j$ stores the food ID chosen for that slot, and its admissible domain is the precomputed set $D_j$. The initial generator samples each gene uniformly from $D_j$. Mutation is \emph{domain-aware}: with probability equal to the mutation rate a gene is re-sampled uniformly from $D_j$, otherwise it is left unchanged. Crossover is standard $n$-point crossover; it remains feasible because both parents are feasible and each position can only contain values from its own $D_j$.
@@ -164,28 +166,28 @@ Two encodings are implemented under a common \texttt{Representation} interface (
 \subsection{Constraint handling and a structural equivalence result}
 \label{sec:constraints}
 
-Three handlers were implemented (\texttt{repair}, \texttt{penalty}, \texttt{death\_penalty}) behind a shared \texttt{ConstraintHandler} protocol. The ablation we report applies them to NSGA-II direct-index, the only configuration in our suite where a violation could in principle occur.
+Three handlers were implemented ({repair}, {penalty}, {death\_penalty}) behind a shared {ConstraintHandler} protocol. The ablation we report applies them to NSGA-II direct-index, the only configuration in our suite where a violation could in principle occur.
 
 Across 150 replicates per handler we observed that the three handlers produce \emph{bit-for-bit identical} hypervolume, IGD, spacing, $\Delta$-spread, best $f_1$ and best $f_2$. The cause is structural: the domain-aware variator never emits an infeasible candidate. Mutation either leaves a gene unchanged (already valid by construction) or re-samples it directly from $D_j$; $n$-point crossover swaps whole segments between two feasible parents and each position is independently constrained to its own $D_j$. The handler logic is therefore \emph{never invoked}, and all three trajectories coincide.
 
-\emph{Reporting consequence.} The handler comparison is a controlled negative result and we treat it as such. From Section~\ref{sec:results} onwards, NSGA-II is reported as two distinct configurations only --- \texttt{nsga2\_di\_repair} (direct-index) and \texttt{nsga2\_rk\_repair} (random-key); the \texttt{penalty} and \texttt{death} entries are folded into the direct-index row with a separate breakdown for the only quantity that does differ between them, namely runtime overhead from spurious feasibility checks (Table~\ref{tab:handler_runtime}). MOPSO and P-ACO carry \texttt{constraint\_handler: "none"} because their feasible construction mechanisms make any handler redundant.
+\emph{Reporting consequence.} The handler comparison is a controlled negative result and we treat it as such. From Section~\ref{sec:results} onwards, NSGA-II is reported as two distinct configurations only --- {nsga2\_di\_repair} (direct-index) and {nsga2\_rk\_repair} (random-key); the {penalty} and {death} entries are folded into the direct-index row with a separate breakdown for the only quantity that does differ between them, namely runtime overhead from spurious feasibility checks (Table~\ref{tab:handler_runtime}). MOPSO and P-ACO carry {constraint\_handler: "none"} because their feasible construction mechanisms make any handler redundant.
 
 \subsection{Implementation details}
 
-The project is written in Python 3.10+ and uses \texttt{inspyred} for NSGA-II and PAES. MOPSO and P-ACO are native implementations built on the same fitness and archive interfaces as the EA variants. Supporting dependencies are \texttt{mysql-connector-python} for database access, \texttt{numpy}/\texttt{pandas} for data manipulation, \texttt{scipy.stats} for statistical tests and \texttt{matplotlib} for visualisation. The food database is restored from the course-provided MySQL dump and queried through \texttt{diet\_bao.data}.
+The project is written in Python 3.10+ and uses {inspyred} for NSGA-II and PAES. MOPSO and P-ACO are native implementations built on the same fitness and archive interfaces as the EA variants. Supporting dependencies are {mysql-connector-python} for database access, {numpy}/{pandas} for data manipulation, {scipy.stats} for statistical tests and {matplotlib} for visualisation. The food database is restored from the course-provided MySQL dump and queried through {diet\_bao.data}.
 
-Two optional extensions sit alongside the main benchmark: (i) a multiprocessing execution path (\texttt{BenchmarkPlan(n\_jobs>1)}) that distributes the experimental grid across CPU cores without affecting per-run timing; and (ii) a memetic NSGA-II variant that injects a 1-step Lamarckian local search via a \texttt{memetic\_rate} parameter. Both are excluded from the main comparison tables to keep them directly comparable.
+Two optional extensions sit alongside the main benchmark: (i) a multiprocessing execution path ({BenchmarkPlan}) that distributes the experimental grid across CPU cores without affecting per-run timing; and (ii) a memetic NSGA-II variant that injects a 1-step Lamarckian local search via a {memetic\_rate} parameter. Both are excluded from the main comparison tables to keep them directly comparable.
 
 The codebase is organised around clear responsibilities:
 \begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
-\item \texttt{representations/}: \texttt{direct\_index} and \texttt{random\_key} encodings behind a shared protocol.
-\item \texttt{constraints/}: \texttt{repair}, \texttt{penalty} and \texttt{death\_penalty} handlers behind a shared protocol.
-\item \texttt{metrics/}: pure-Python implementations of 2D hypervolume, IGD, Schott's spacing and Deb's $\Delta$-spread.
-\item \texttt{ea/} and \texttt{si/}: algorithm wrappers (\texttt{nsga2\_diet}, \texttt{paes\_diet}, \texttt{mopso\_diet}, \texttt{paco\_diet}).
-\item \texttt{experiment/}: benchmark composition (\texttt{AlgorithmConfig}, \texttt{BenchmarkPlan}, \texttt{run\_all\_subjects}) and visualisation helpers.
-\item \texttt{stac/}: Wilcoxon signed-ranks, Friedman, Friedman Aligned Ranks, Shaffer's post-hoc and Holm correction.
+\item {representations/}: {direct\_index} and {random\_key} encodings behind a shared protocol.
+\item {constraints/}: {repair}, {penalty} and {death\_penalty} handlers behind a shared protocol.
+\item {metrics/}: pure-Python implementations of 2D hypervolume, IGD, Schott's spacing and Deb's $\Delta$-spread.
+\item {ea/} and {si/}: algorithm wrappers ({nsga2\_diet}, {paes\_diet}, {mopso\_diet}, {paco\_diet}).
+\item {experiment/}: benchmark composition ({AlgorithmConfig}, {BenchmarkPlan}, {run\_all\_subjects}) and visualisation helpers.
+\item {stac/}: Wilcoxon signed-ranks, Friedman, Friedman Aligned Ranks, Shaffer's post-hoc and Holm correction.
 \end{itemize}
-A suite of unit and integration tests is run with \texttt{pytest} before any experiment. Listing~\ref{lst:mut} shows the domain-aware mutation that drives the equivalence result of Section~\ref{sec:constraints}.
+A suite of unit and integration tests is run with {pytest} before any experiment. Listing~\ref{lst:mut} shows the domain-aware mutation that drives the equivalence result of Section~\ref{sec:constraints}.
 
 \begin{lstlisting}[style=pyEstilo, caption={Domain-aware mutation for direct-index NSGA-II. Because every gene either stays unchanged or is re-sampled from its own $D_j$, the operator cannot emit an infeasible candidate.}, label={lst:mut}]
 def variator(random, candidates, args):
@@ -227,7 +229,7 @@ P-ACO      & pop, gen, archive, evaporation           & $\{30,60\}\times\{40,80\
 \label{tab:tuning_grid}
 \end{table}
 
-The full tuning results are saved to \texttt{experiments/tuning\_results.csv} and the picked winners to \texttt{experiments/tuning\_best.csv}. Table~\ref{tab:tuning_winners} reports the actual settings consumed by the full benchmark.
+The full tuning results are saved to {experiments/tuning\_results.csv} and the picked winners to {experiments/tuning\_best.csv}. Table~\ref{tab:tuning_winners} reports the actual settings consumed by the full benchmark.
 
 \begin{table}[H]
 \centering
@@ -242,11 +244,11 @@ MOPSO      & pop=30, gen=80, archive=40, $w=0.4$, $c_1=c_2=2.0$     & 489{,}401 
 P-ACO      & pop=60, gen=40, archive=40, $\rho=0.1$, $\alpha=1$, $\tau_0=1$ & 459{,}679 & 16.39 \\
 \bottomrule
 \end{tabular}
-\caption{Hyperparameter winners from the tuning sweep (\texttt{experiments/tuning\_best.csv}). PAES uses a $(1{+}1)$-ES so its population is~1 by construction; we compensate with a larger generation budget.}
+\caption{Hyperparameter winners from the tuning sweep ({experiments/tuning\_best.csv}). PAES uses a $(1{+}1)$-ES so its population is~1 by construction; we compensate with a larger generation budget.}
 \label{tab:tuning_winners}
 \end{table}
 
-Seven main-grid configurations consume the settings in Table~\ref{tab:tuning_winners}. Three of them (\texttt{nsga2\_di\_repair/penalty/death}) form the constraint-handler ablation discussed in Section~\ref{sec:constraints}; they share every hyperparameter and differ only in the handler. The remaining four span the EA/swarm comparison and the encoding comparison.
+Seven main-grid configurations consume the settings in Table~\ref{tab:tuning_winners}. Three of them ({nsga2\_di\_repair/penalty/death}) form the constraint-handler ablation discussed in Section~\ref{sec:constraints}; they share every hyperparameter and differ only in the handler. The remaining four span the EA/swarm comparison and the encoding comparison.
 
 \begin{table}[H]
 \centering
@@ -255,22 +257,22 @@ Seven main-grid configurations consume the settings in Table~\ref{tab:tuning_win
 \toprule
 \textbf{Config id} & \textbf{Algorithm} & \textbf{Encoding} & \textbf{Pop} & \textbf{Gen} & \textbf{Notes} \\
 \midrule
-\texttt{nsga2\_di\_repair}\,$^{\dagger}$   & NSGA-II    & direct\_index & 80 & 80 & repair handler, mut.\ rate 0.2 \\
-\texttt{nsga2\_di\_penalty}\,$^{\dagger}$  & NSGA-II    & direct\_index & 80 & 80 & penalty $(1000,10)$ per violation \\
-\texttt{nsga2\_di\_death}\,$^{\dagger}$    & NSGA-II    & direct\_index & 80 & 80 & infeasible $\to +\infty$ \\
-\texttt{nsga2\_rk\_repair}    & NSGA-II    & random\_key   & 80 & 80 & Gaussian mutation $\sigma=0.1$ \\
-\texttt{paes\_di\_repair}     & PAES       & direct\_index & 1  & 800 & archive size 40, mut.\ rate 0.1 \\
-\texttt{mopso\_rk}            & MOPSO      & random\_key   & 30 & 80 & Sigma leader, archive 40 \\
-\texttt{paco\_di}             & P-ACO      & direct\_index & 60 & 40 & per-slot pheromones, archive 40 \\
+{nsga2\_di\_repair}\,$^{\dagger}$   & NSGA-II    & direct\_index & 80 & 80 & repair handler, mut.\ rate 0.2 \\
+{nsga2\_di\_penalty}\,$^{\dagger}$  & NSGA-II    & direct\_index & 80 & 80 & penalty $(1000,10)$ per violation \\
+{nsga2\_di\_death}\,$^{\dagger}$    & NSGA-II    & direct\_index & 80 & 80 & infeasible $\to +\infty$ \\
+{nsga2\_rk\_repair}    & NSGA-II    & random\_key   & 80 & 80 & Gaussian mutation $\sigma=0.1$ \\
+{paes\_di\_repair}     & PAES       & direct\_index & 1  & 800 & archive size 40, mut.\ rate 0.1 \\
+{mopso\_rk}            & MOPSO      & random\_key   & 30 & 80 & Sigma leader, archive 40 \\
+{paco\_di}             & P-ACO      & direct\_index & 60 & 40 & per-slot pheromones, archive 40 \\
 \bottomrule
 \end{tabular}
-\caption{Seven main-grid configurations used in the full experiment. $\dagger$~The three NSGA-II direct-index handlers produce identical fronts and metrics (Section~\ref{sec:constraints}); the results section reports them as the single representative entry \texttt{nsga2\_di\_repair}.}
+\caption{Seven main-grid configurations used in the full experiment. $\dagger$~The three NSGA-II direct-index handlers produce identical fronts and metrics (Section~\ref{sec:constraints}); the results section reports them as the single representative entry {nsga2\_di\_repair}.}
 \label{tab:configs}
 \end{table}
 
 \subsection{Experimental setup}
 
-The seven configurations are executed across the five user profiles with 30 stochastic replicates each, for a total of $7 \times 5 \times 30 = 1{,}050$ runs. Per-replicate seeds are deterministic and unique (\texttt{seed0+r}), making the experiment fully reproducible. The notebook \texttt{main.ipynb} schedules every (subject, configuration, seed) triple through \texttt{concurrent.futures.ProcessPoolExecutor} (\texttt{BenchmarkPlan(n\_jobs=4)} by default) and writes the raw rows to \texttt{experiments/all\_runs.csv}. The parallel execution path only affects wall-clock throughput: each replicate is still timed independently, so the runtime column remains comparable across configurations.
+The seven configurations are executed across the five user profiles with 30 stochastic replicates each, for a total of $7 \times 5 \times 30 = 1{,}050$ runs. Per-replicate seeds are deterministic and unique ({seed0+r}), making the experiment fully reproducible. The notebook {main.ipynb} schedules every (subject, configuration, seed) triple through {concurrent.futures.ProcessPoolExecutor} ({BenchmarkPlan(n\_jobs=4)} by default) and writes the raw rows to {experiments/all\_runs.csv}. The parallel execution path only affects wall-clock throughput: each replicate is still timed independently, so the runtime column remains comparable across configurations.
 
 \paragraph{Metrics.} For every run we record the best $f_1$, the best $f_2$, the runtime and the size of the Pareto front. From the raw front we additionally compute four multi-objective indicators:
 \begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
@@ -300,11 +302,11 @@ The MySQL dump provided by the course contains \textbf{2{,}616 food items}, each
 \section{Experimental Results}
 \label{sec:results}
 
-\paragraph{Result source.} The tables and figures in this section are drawn from \texttt{experiments/all\_runs.csv} (1{,}050 rows: 7 configurations $\times$ 5 subjects $\times$ 30 replicates). As established in Section~\ref{sec:constraints}, the three direct-index NSGA-II handlers produce identical quality metrics across all 150 replicates; from this point onwards we report NSGA-II as two distinct configurations only --- direct-index and random-key --- yielding five distinct entries in every quality-metric table. A separate breakdown (Table~\ref{tab:handler_runtime}) reports the only quantity in which the three handlers differ, namely runtime overhead.
+\paragraph{Result source.} The tables and figures in this section are drawn from {experiments/all\_runs.csv} (1{,}050 rows: 7 configurations $\times$ 5 subjects $\times$ 30 replicates). As established in Section~\ref{sec:constraints}, the three direct-index NSGA-II handlers produce identical quality metrics across all 150 replicates; from this point onwards we report NSGA-II as two distinct configurations only --- direct-index and random-key --- yielding five distinct entries in every quality-metric table. A separate breakdown (Table~\ref{tab:handler_runtime}) reports the only quantity in which the three handlers differ, namely runtime overhead.
 
 \subsection{Aggregated metrics}
 
-Table~\ref{tab:summary} reports the mean of every metric across the 30 replicates and 5 subjects per configuration ($n=150$ per row), computed from \texttt{experiments/all\_runs.csv}. Best value per metric is in bold.
+Table~\ref{tab:summary} reports the mean of every metric across the 30 replicates and 5 subjects per configuration ($n=150$ per row), computed from {experiments/all\_runs.csv}. Best value per metric is in bold.
 
 \begin{table}[H]
 \centering
@@ -313,18 +315,18 @@ Table~\ref{tab:summary} reports the mean of every metric across the 30 replicate
 \toprule
 \textbf{Config} & \textbf{HV $\uparrow$} & \textbf{IGD $\downarrow$} & \textbf{Spacing $\downarrow$} & \textbf{$\Delta$-Spread $\downarrow$} & \textbf{$f_1$ best $\downarrow$} & \textbf{$f_2$ best $\downarrow$} & \textbf{Rt.\ (s) $\downarrow$} & \textbf{Front} \\
 \midrule
-\texttt{nsga2\_di\_repair}\,$^{\dagger}$ & 1{,}014{,}630 & 197.13 & \textbf{97.71} & \textbf{0.82} & 1{,}343.37 & 167.77 & 3.44 & 80.00 \\
-\texttt{nsga2\_rk\_repair} & \textbf{1{,}059{,}760} & \textbf{152.21} & 104.68 & 0.83 & \textbf{1{,}105.10} & 167.11 & 3.62 & 80.00 \\
-\texttt{paes\_di\_repair}  & 401{,}023 & 469.69 & 185.66 & 1.09 & 1{,}987.88 & \textbf{123.92} & 4.20 & 38.89 \\
-\texttt{mopso\_rk}         & 454{,}137 & 550.01 & 345.03 & 0.90 & 1{,}986.80 & 176.60 & \textbf{2.56} & 15.37 \\
-\texttt{paco\_di}          & 245{,}278 & 549.00 & 362.24 & 0.80 & 1{,}242.08 & 141.27 & 337.53 & 9.02 \\
+{nsga2\_di\_repair}\,$^{\dagger}$ & 1{,}014{,}630 & 197.13 & \textbf{97.71} & \textbf{0.82} & 1{,}343.37 & 167.77 & 3.44 & 80.00 \\
+{nsga2\_rk\_repair} & \textbf{1{,}059{,}760} & \textbf{152.21} & 104.68 & 0.83 & \textbf{1{,}105.10} & 167.11 & 3.62 & 80.00 \\
+{paes\_di\_repair}  & 401{,}023 & 469.69 & 185.66 & 1.09 & 1{,}987.88 & \textbf{123.92} & 4.20 & 38.89 \\
+{mopso\_rk}         & 454{,}137 & 550.01 & 345.03 & 0.90 & 1{,}986.80 & 176.60 & \textbf{2.56} & 15.37 \\
+{paco\_di}          & 245{,}278 & 549.00 & 362.24 & 0.80 & 1{,}242.08 & 141.27 & 337.53 & 9.02 \\
 \bottomrule
 \end{tabular}
-\caption{Mean metrics per configuration over $n=150$ runs (30 replicates $\times$ 5 subjects). Bold marks the best value in each column. $\dagger$~Representative of the three NSGA-II direct-index handlers (\texttt{repair}, \texttt{penalty}, \texttt{death}), which produce identical quality metrics (Section~\ref{sec:constraints}); their runtime differences are reported separately in Table~\ref{tab:handler_runtime}.}
+\caption{Mean metrics per configuration over $n=150$ runs (30 replicates $\times$ 5 subjects). Bold marks the best value in each column. $\dagger$~Representative of the three NSGA-II direct-index handlers ({repair}, {penalty}, {death}), which produce identical quality metrics (Section~\ref{sec:constraints}); their runtime differences are reported separately in Table~\ref{tab:handler_runtime}.}
 \label{tab:summary}
 \end{table}
 
-\paragraph{Handler runtime breakdown.} Quality metrics are bit-identical across the three NSGA-II direct-index handlers, but mean runtime is not: \texttt{penalty} and \texttt{death\_penalty} still invoke \texttt{count\_violations} on every individual even when no violations exist, while \texttt{repair} short-circuits the same check. The overhead is approximately $2\times$ on this workload (Table~\ref{tab:handler_runtime}).
+\paragraph{Handler runtime breakdown.} Quality metrics are bit-identical across the three NSGA-II direct-index handlers, but mean runtime is not: {penalty} and {death\_penalty} still invoke {count\_violations} on every individual even when no violations exist, while {repair} short-circuits the same check. The overhead is approximately $2\times$ on this workload (Table~\ref{tab:handler_runtime}).
 
 \begin{table}[H]
 \centering
@@ -333,9 +335,9 @@ Table~\ref{tab:summary} reports the mean of every metric across the 30 replicate
 \toprule
 \textbf{Handler} & \textbf{Mean rt.\ (s)} & \textbf{Std.\ rt.\ (s)} \\
 \midrule
-\texttt{nsga2\_di\_repair}  & 3.44 & 0.17 \\
-\texttt{nsga2\_di\_death}   & 6.66 & 0.21 \\
-\texttt{nsga2\_di\_penalty} & 6.70 & 0.27 \\
+{nsga2\_di\_repair}  & 3.44 & 0.17 \\
+{nsga2\_di\_death}   & 6.66 & 0.21 \\
+{nsga2\_di\_penalty} & 6.70 & 0.27 \\
 \bottomrule
 \end{tabular}
 \caption{Runtime breakdown for the three NSGA-II direct-index constraint handlers ($n=150$ each). All other metrics (HV, IGD, spacing, $\Delta$-spread, $f_1$, $f_2$) are identical across the three rows and therefore omitted; see Table~\ref{tab:summary} for the shared values.}
@@ -353,14 +355,14 @@ The \textbf{Friedman Aligned Ranks} omnibus across all seven configurations reje
 \toprule
 \textbf{Config} & \textbf{HV rank $\downarrow$} & \textbf{IGD rank $\downarrow$} & \textbf{Runtime rank $\downarrow$} \\
 \midrule
-\texttt{nsga2\_rk\_repair}      & 326.22          & \textbf{255.52} & 343.29          \\
-\texttt{nsga2\_di\_repair}\,$^{\dagger}$ & \textbf{310.61} & 343.49          & 316.81          \\
-\texttt{paes\_di\_repair}       & 787.41          & 725.01          & 428.69          \\
-\texttt{mopso\_rk}              & 773.72          & 844.81          & \textbf{212.07} \\
-\texttt{paco\_di}               & 859.33          & 822.69          & 975.50          \\
+{nsga2\_rk\_repair}      & 326.22          & \textbf{255.52} & 343.29          \\
+{nsga2\_di\_repair}\,$^{\dagger}$ & \textbf{310.61} & 343.49          & 316.81          \\
+{paes\_di\_repair}       & 787.41          & 725.01          & 428.69          \\
+{mopso\_rk}              & 773.72          & 844.81          & \textbf{212.07} \\
+{paco\_di}               & 859.33          & 822.69          & 975.50          \\
 \bottomrule
 \end{tabular}
-\caption{Friedman Aligned Ranks per metric (lower is better, $n=150$ aligned blocks per configuration). For hypervolume the aligned observations are sign-flipped so that better HV maps to a lower rank. Omnibus statistics: HV $T=599.47$, IGD $T=600.19$, runtime $T=803.96$; $p<10^{-70}$ in every case. $\dagger$~The HV and IGD ranks are shared with \texttt{nsga2\_di\_penalty} and \texttt{nsga2\_di\_death}; on runtime they sit at 702.79 and 699.35 respectively, reflecting the overhead reported in Table~\ref{tab:handler_runtime}.}
+\caption{Friedman Aligned Ranks per metric (lower is better, $n=150$ aligned blocks per configuration). For hypervolume the aligned observations are sign-flipped so that better HV maps to a lower rank. Omnibus statistics: HV $T=599.47$, IGD $T=600.19$, runtime $T=803.96$; $p<10^{-70}$ in every case. $\dagger$~The HV and IGD ranks are shared with {nsga2\_di\_penalty} and {nsga2\_di\_death}; on runtime they sit at 702.79 and 699.35 respectively, reflecting the overhead reported in Table~\ref{tab:handler_runtime}.}
 \label{tab:ranks}
 \end{table}
 
@@ -368,7 +370,7 @@ The pairwise \textbf{Wilcoxon signed-ranks test with Holm--Bonferroni correction
 \begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
 \item \textbf{NSGA-II $\gg$ everything else.} Both NSGA-II variants are significantly better on HV than PAES, MOPSO and P-ACO (all $p_{\mathrm{adj}}\le 1.85\times10^{-24}$, well below $\alpha=0.05$).
 \item \textbf{Within NSGA-II:} the random-key variant has the highest mean HV and the best mean IGD, but its HV advantage over direct-index is \emph{not} statistically significant ($p_{\mathrm{raw}}=0.359$, $p_{\mathrm{adj}}=0.359$).
-\item \textbf{Constraint handlers:} every pairwise comparison between \texttt{repair}, \texttt{penalty} and \texttt{death\_penalty} on HV yields $p_{\mathrm{adj}}=1.0$ exactly, confirming the structural equivalence of Section~\ref{sec:constraints}.
+\item \textbf{Constraint handlers:} every pairwise comparison between {repair}, {penalty} and {death\_penalty} on HV yields $p_{\mathrm{adj}}=1.0$ exactly, confirming the structural equivalence of Section~\ref{sec:constraints}.
 \item \textbf{Swarm methods:} MOPSO is significantly better than P-ACO on HV ($p_{\mathrm{adj}}=2.51\times10^{-11}$), but indistinguishable from PAES ($p_{\mathrm{adj}}=0.451$). P-ACO is significantly worse than every other method on HV.
 \end{itemize}
 
@@ -386,7 +388,7 @@ Figure~\ref{fig:demo} contrasts the five distinct configurations on a single run
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{experiments/boxplots.png}
-\caption{Per-configuration distributions across 30 replicates $\times$ 5 subjects ($n=150$ per box). Top row: hypervolume, IGD, spacing. Bottom row: best $f_1$, best $f_2$, runtime in seconds. NSGA-II variants dominate hypervolume and IGD; MOPSO is the fastest method; P-ACO is the slowest in the current implementation. \texttt{nsga2\_di\_repair} is shown as representative for all three direct-index NSGA-II handlers.}
+\caption{Per-configuration distributions across 30 replicates $\times$ 5 subjects ($n=150$ per box). Top row: hypervolume, IGD, spacing. Bottom row: best $f_1$, best $f_2$, runtime in seconds. NSGA-II variants dominate hypervolume and IGD; MOPSO is the fastest method; P-ACO is the slowest in the current implementation. {nsga2\_di\_repair} is shown as representative for all three direct-index NSGA-II handlers.}
 \label{fig:boxplots}
 \end{figure}
 
@@ -399,19 +401,17 @@ Figure~\ref{fig:demo} contrasts the five distinct configurations on a single run
 
 \subsection{Discussion}
 
-\paragraph{Random-key NSGA-II is the strongest overall configuration.} Across the full benchmark, \texttt{nsga2\_rk\_repair} leads on hypervolume (1{,}059{,}760), IGD (152.21) and best mean $f_1$ (1{,}105.10) while remaining within 5\% of the fastest NSGA-II variant on runtime (3.62~s vs.\ 3.44~s). The direct-index variant is a close second on HV ($1{,}014{,}630$) and IGD ($197.13$), and the HV gap between the two encodings does not reach statistical significance ($p_{\mathrm{adj}}=0.359$). The likely driver of the random-key advantage is that Gaussian perturbations in $[0,1]^{77}$ explore the decoded categorical space more smoothly than discrete uniform re-sampling, and the equal-width binning lets a single mutation step traverse multiple foods within a slot's admissible set.
+\paragraph{Random-key NSGA-II is the strongest overall configuration.} Across the full benchmark, {nsga2\_rk\_repair} leads on hypervolume (1{,}059{,}760), IGD (152.21) and best mean $f_1$ (1{,}105.10) while remaining within 5\% of the fastest NSGA-II variant on runtime (3.62~s vs.\ 3.44~s). The direct-index variant is a close second on HV ($1{,}014{,}630$) and IGD ($197.13$), and the HV gap between the two encodings does not reach statistical significance ($p_{\mathrm{adj}}=0.359$). The likely driver of the random-key advantage is that Gaussian perturbations in $[0,1]^{77}$ explore the decoded categorical space more smoothly than discrete uniform re-sampling, and the equal-width binning lets a single mutation step traverse multiple foods within a slot's admissible set.
 
-\paragraph{The constraint-handler ablation is a controlled negative result.} The three direct-index handlers (\texttt{repair}, \texttt{penalty}, \texttt{death\_penalty}) produce identical hypervolume (1{,}014{,}630), IGD (197.13), spacing (97.71), $\Delta$-spread (0.82), best $f_1$ (1{,}343.37) and best $f_2$ (167.77) across all 150 replicates each, and every pairwise Wilcoxon test between them returns $p_{\mathrm{adj}}=1.0$. The cause is structural rather than statistical: the domain-aware variator cannot produce an infeasible candidate, so the handler branch is unreachable. The only measurable cost difference comes from spurious validity checks: \texttt{repair} runs in 3.44~s on average, while \texttt{penalty} (6.70~s) and \texttt{death\_penalty} (6.66~s) pay a roughly $2\times$ overhead because they still invoke \texttt{count\_violations} on every individual. This is pedagogically valuable: it makes explicit that a feasibility-preserving representation renders explicit constraint handling moot, a property the report's Future Work section turns into a concrete experimental proposal.
+\paragraph{The constraint-handler ablation is a controlled negative result.} The three direct-index handlers ({repair}, {penalty}, {death\_penalty}) produce identical hypervolume (1{,}014{,}630), IGD (197.13), spacing (97.71), $\Delta$-spread (0.82), best $f_1$ (1{,}343.37) and best $f_2$ (167.77) across all 150 replicates each, and every pairwise Wilcoxon test between them returns $p_{\mathrm{adj}}=1.0$. The cause is structural rather than statistical: the domain-aware variator cannot produce an infeasible candidate, so the handler branch is unreachable. The only measurable cost difference comes from spurious validity checks: {repair} runs in 3.44~s on average, while {penalty} (6.70~s) and {death\_penalty} (6.66~s) pay a roughly $2\times$ overhead because they still invoke {count\_violations} on every individual. This is pedagogically valuable: it makes explicit that a feasibility-preserving representation renders explicit constraint handling moot, a property the report's Future Work section turns into a concrete experimental proposal.
 
-\paragraph{PAES is the best per-point macronutrient solver but the weakest Pareto coverer.} \texttt{paes\_di\_repair} records the lowest mean best $f_2$ across all configurations ($123.92$), meaning its archive members are individually closest to the prescribed macronutrient split. However, its hypervolume ($401{,}023$) is roughly $2.5\times$ smaller than NSGA-II's, reflecting the intrinsic trade-off of a $(1{+}1)$-ES: single-trajectory search can exploit one region deeply but cannot match the breadth of a population-based method, even with an enlarged generation budget (800).
+\paragraph{PAES is the best per-point macronutrient solver but the weakest Pareto coverer.} {paes\_di\_repair} records the lowest mean best $f_2$ across all configurations ($123.92$), meaning its archive members are individually closest to the prescribed macronutrient split. However, its hypervolume ($401{,}023$) is roughly $2.5\times$ smaller than NSGA-II's, reflecting the intrinsic trade-off of a $(1{+}1)$-ES: single-trajectory search can exploit one region deeply but cannot match the breadth of a population-based method, even with an enlarged generation budget (800).
 
-\paragraph{Swarm methods diverge sharply.} \texttt{mopso\_rk} is the fastest method in the benchmark (mean runtime 2.56~s) and achieves a mid-range hypervolume ($454{,}137$); its HV is indistinguishable from PAES ($p_{\mathrm{adj}}=0.451$) but significantly higher than P-ACO. \texttt{paco\_di}, by contrast, occupies the worst position on every metric: lowest mean HV ($245{,}278$), high IGD ($549.00$), and a runtime of $337.53$~s --- roughly $100\times$ MOPSO and $80\times$ NSGA-II direct-index. The combination of low quality and high cost is a strong signal that the current pheromone update loop is not implemented efficiently, and we list its profiling and optimisation as the most impactful Future Work item.
+\paragraph{Swarm methods diverge sharply.} {mopso\_rk} is the fastest method in the benchmark (mean runtime 2.56~s) and achieves a mid-range hypervolume ($454{,}137$); its HV is indistinguishable from PAES ($p_{\mathrm{adj}}=0.451$) but significantly higher than P-ACO. {paco\_di}, by contrast, occupies the worst position on every metric: lowest mean HV ($245{,}278$), high IGD ($549.00$), and a runtime of $337.53$~s --- roughly $100\times$ MOPSO and $80\times$ NSGA-II direct-index. The combination of low quality and high cost is a strong signal that the current pheromone update loop is not implemented efficiently, and we list its profiling and optimisation as the most impactful Future Work item.
 
 \subsection{Code repository}
 
 The full source code, tests and experiment notebook required to reproduce every figure and table is available at: \url{https://github.com/gjorgiandonovski/Multi-objective-Diet-Optimization-Problem}.
-
-The reproducibility workflow is: run \texttt{main.ipynb} end-to-end (database connection required), then the cells in Section~5 of the notebook regenerate \texttt{experiments/summary.csv}, \texttt{experiments/friedman\_aligned.csv}, \texttt{experiments/pairwise\_hv\_shaffer.csv} and the three figures referenced above, which feed directly into this report.
 
 %==============================================
 % CONCLUSION
@@ -420,7 +420,7 @@ The reproducibility workflow is: run \texttt{main.ipynb} end-to-end (database co
 
 This project tackled the multi-objective weekly diet planning problem with two evolutionary algorithms (NSGA-II, PAES), two swarm-intelligence algorithms (MOPSO, P-ACO), two solution encodings (direct-index and random-key) and three constraint-handling strategies (repair, penalty, death-penalty). The full benchmark covers $1{,}050$ runs across seven configurations (30 replicates $\times$ 5 subjects each), evaluated on hypervolume, IGD, Schott's spacing and Deb's $\Delta$-spread.
 
-The strongest configuration is \texttt{nsga2\_rk\_repair}, with mean hypervolume $1{,}059{,}760$ and IGD $152.21$ at $3.62$~s per run. The direct-index NSGA-II variant is a close second (HV $1{,}014{,}630$, IGD $197.13$, 3.44~s) and the HV gap does not reach statistical significance. PAES delivers the lowest per-plan macronutrient deviation ($f_2 = 123.92$) but the narrowest front (HV $401{,}023$); MOPSO is the fastest method (2.56~s) at mid-range quality; P-ACO trails on every metric and is by far the slowest ($337.53$~s per run).
+The strongest configuration is {nsga2\_rk\_repair}, with mean hypervolume $1{,}059{,}760$ and IGD $152.21$ at $3.62$~s per run. The direct-index NSGA-II variant is a close second (HV $1{,}014{,}630$, IGD $197.13$, 3.44~s) and the HV gap does not reach statistical significance. PAES delivers the lowest per-plan macronutrient deviation ($f_2 = 123.92$) but the narrowest front (HV $401{,}023$); MOPSO is the fastest method (2.56~s) at mid-range quality; P-ACO trails on every metric and is by far the slowest ($337.53$~s per run).
 
 The constraint-handler ablation produced a clean structural finding: because the direct-index variator cannot emit an infeasible candidate, \emph{repair}, \emph{penalty} and \emph{death-penalty} share identical trajectories and bit-for-bit identical quality metrics, with the only measurable difference being a $\sim$2$\times$ runtime overhead in \emph{penalty}/\emph{death-penalty} from spurious validity checks. This collapse turned what would otherwise be three separate result rows into a single reportable entry plus a runtime side-table --- a much cleaner presentation, and a pedagogically useful demonstration that a feasibility-preserving representation makes explicit constraint handling redundant.
 
