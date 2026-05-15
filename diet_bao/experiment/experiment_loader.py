@@ -9,6 +9,7 @@ from __future__ import annotations
 import concurrent.futures
 import time
 from dataclasses import asdict, dataclass, field
+from collections.abc import Sequence
 from typing import Any, Callable
 
 import pandas as pd
@@ -149,10 +150,20 @@ def _run_single_task(task: tuple[int, int, float, AlgorithmConfig, int]) -> tupl
     return subject_id, cfg, seed, res, float(dt)
 
 
-def _hv_reference(front: list[tuple[float, float]], pad: float = 1.1) -> tuple[float, float]:
-    if not front:
+def _hv_reference(fronts: Sequence[Sequence[tuple[float, ...]]], pad: float = 1.1) -> tuple[float, float]:
+    """Build one HV reference point that dominates every observed point.
+
+    Hypervolume values are only comparable when they are computed against the
+    same reference point. For each subject we therefore derive a single point
+    from the union of all fronts generated for that subject.
+    """
+    points = [tuple(float(x) for x in p[:2]) for front in fronts for p in front]
+    if not points:
         return (1.0, 1.0)
-    return (max(p[0] for p in front) * pad + 1.0, max(p[1] for p in front) * pad + 1.0)
+    return (
+        max(p[0] for p in points) * pad + 1.0,
+        max(p[1] for p in points) * pad + 1.0,
+    )
 
 
 def _reference_extremes(reference_front: list[tuple[float, ...]]) -> list[tuple[float, ...]] | None:
@@ -167,11 +178,15 @@ def _reference_extremes(reference_front: list[tuple[float, ...]]) -> list[tuple[
     return [min_f1, min_f2]
 
 
-def _evaluate_run(result: dict[str, Any], reference_front: list[tuple[float, ...]]) -> tuple[float, float, float, float]:
+def _evaluate_run(
+    result: dict[str, Any],
+    reference_front: list[tuple[float, ...]],
+    hv_reference: tuple[float, float] | None = None,
+) -> tuple[float, float, float, float]:
     front = [tuple(p) for p in result["front"]]
     if not front:
         return 0.0, float("inf"), 0.0, 0.0
-    ref_point = _hv_reference(front)
+    ref_point = hv_reference if hv_reference is not None else _hv_reference([front])
     hv = hypervolume_2d(front, reference=ref_point)
     igd = inverted_generational_distance(front, reference_front) if reference_front else 0.0
     sp = schott_spacing(front)
@@ -195,12 +210,13 @@ def run_subject(subject: SubjectProfile, foods: list[dict], plan: BenchmarkPlan)
 
     all_fronts = [[tuple(p) for p in res["front"]] for _, _, res, _ in raw_results]
     reference_front = union_reference_front(*all_fronts)
+    hv_reference = _hv_reference(all_fronts)
 
     rows = []
     for cfg, seed, res, dt in raw_results:
         front = [tuple(p) for p in res["front"]]
         f1_best, f2_best = res["best_f"]
-        hv, igd, sp, ds = _evaluate_run(res, reference_front)
+        hv, igd, sp, ds = _evaluate_run(res, reference_front, hv_reference)
         rows.append(asdict(RunResult(
             subject_id=subject.sujeto_id,
             config_id=cfg.config_id,
@@ -256,12 +272,13 @@ def run_all_subjects(subjects: list[SubjectProfile], foods: list[dict], plan: Be
             continue
         all_fronts = [[tuple(p) for p in res["front"]] for _, _, res, _ in raw_results]
         reference_front = union_reference_front(*all_fronts)
+        hv_reference = _hv_reference(all_fronts)
 
         rows = []
         for cfg, seed, res, dt in raw_results:
             front = [tuple(p) for p in res["front"]]
             f1_best, f2_best = res["best_f"]
-            hv, igd, sp, ds = _evaluate_run(res, reference_front)
+            hv, igd, sp, ds = _evaluate_run(res, reference_front, hv_reference)
             rows.append(asdict(RunResult(
                 subject_id=subject.sujeto_id,
                 config_id=cfg.config_id,

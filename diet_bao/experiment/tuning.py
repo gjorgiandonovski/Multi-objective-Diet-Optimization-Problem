@@ -29,6 +29,7 @@ import pandas as pd
 from diet_bao.experiment.experiment_loader import (
     AlgorithmConfig,
     _evaluate_run,
+    _hv_reference,
     _run_single_task,
     _set_worker_foods,
 )
@@ -209,9 +210,10 @@ def run_tuning_grid(
     """Run every tuning combination ``n_runs`` times on every subject in
     ``subjects`` and return the tidy long-form DataFrame.
 
-    Hypervolume is computed against a per-subject reference front built from
-    the union of all fronts produced across the entire tuning sweep on that
-    subject. This is the same protocol as the main experiment.
+    Hypervolume is computed against a common per-subject reference point built
+    from all fronts produced across the entire tuning sweep on that subject.
+    IGD and Delta Spread use the per-subject reference front. This is the same
+    protocol as the main experiment.
 
     Set ``n_jobs`` above 1 to run independent tuning evaluations in parallel.
     """
@@ -254,12 +256,13 @@ def run_tuning_grid(
                         "front": front,
                     })
 
-        # --- 2. Per-subject reference front for HV / IGD. -----------------
+        # --- 2. Per-subject references for HV / IGD / Delta. -------------
         reference_front = union_reference_front(*per_subject_fronts)
+        hv_reference = _hv_reference(per_subject_fronts)
 
         for run in per_subject_runs:
             hv, igd, sp, ds = _evaluate_run(
-                {"front": run["front"]}, reference_front,
+                {"front": run["front"]}, reference_front, hv_reference,
             )
             run["hypervolume"] = hv
             run["igd"] = igd
@@ -328,9 +331,10 @@ def _run_tuning_grid_parallel(
     for subject in subjects:
         subject_id = subject.sujeto_id
         reference_front = union_reference_front(*per_subject_fronts[subject_id])
+        hv_reference = _hv_reference(per_subject_fronts[subject_id])
         for run in per_subject_runs[subject_id]:
             hv, igd, sp, ds = _evaluate_run(
-                {"front": run["front"]}, reference_front,
+                {"front": run["front"]}, reference_front, hv_reference,
             )
             run["hypervolume"] = hv
             run["igd"] = igd

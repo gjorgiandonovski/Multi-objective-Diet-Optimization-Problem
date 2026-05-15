@@ -38,6 +38,7 @@ ENV/
 # Ignore large data files but keep the directory
 data/*
 !data/.gitkeep
+.pytest_cache/
 
 # Experiment logs and plots
 experiments/*.csv
@@ -45,6 +46,19 @@ experiments/*.png
 experiments/*.json
 experiments/*.log
 !experiments/README.md
+
+### --- LaTeX Build Artifacts --- ###
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+!report.pdf
 
 ### --- Environment & Secrets --- ###
 .env
