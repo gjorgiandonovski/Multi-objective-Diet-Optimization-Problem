@@ -1,29 +1,43 @@
 \documentclass[aspectratio=169,10pt]{beamer}
+
 % Compile with XeLaTeX or LuaLaTeX
 \usepackage{fontspec}
 \setmainfont{Fira Sans Light}
+
 \usepackage{amsmath,amssymb,mathtools}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{xcolor}
-% NOTE: beamer already loads hyperref; do NOT load it again (avoids option clash)
-% Theme (simple, research-like)
+
+% Theme (research-like)
 \usetheme{Madrid}
 \usecolortheme{dolphin}
 \setbeamertemplate{navigation symbols}{}
 
-\title[Multi-Objective Diet Optimization]{Multi-Objective Diet Optimization Problem}
-\subtitle{A Multi-Objective Evolutionary Benchmark}
-\author{Ismael De Los Santos \and Gjorgi Andonovski}
-\institute{Universidad Politécnica de Madrid}
+% Optional: slide numbers in the footer (clean + fits)
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=\paperwidth,ht=2.5ex,dp=1.2ex,leftskip=0.8em,rightskip=0.8em]{author in head/foot}%
+      \hfill \insertframenumber{} / \inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+
+% Title information
+\title[Multi-objective Diet Optimization]{\LARGE Multi-objective Diet Optimization Problem}
+\subtitle{\large Bioinspired Algorithms for Optimization 2026 - Group 11}
+\author[De Los Santos \& Andonovski]{Ismael De Los Santos \and Gjorgi Andonovski}
+\institute[]{\textbf{Professors:} Cristian Ramírez Atencia, Ángel Panizo LLedot \\[0.2cm] Universidad Politécnica de Madrid (UPM)}
 \date{May 2026}
 
 \begin{document}
 
-%================================================
+% Title frame
 \begin{frame}
-  \titlepage
+    \titlepage
 \end{frame}
+
 
 %================================================
 \begin{frame}
@@ -377,57 +391,6 @@ P-ACO DI & 2,700.35 & 179.80 & 0.067 \\
 
   \item \textbf{Statistical validation:} Friedman and Wilcoxon tests confirm that NSGA-II's superiority is not by chance ($p < 10^{-70}$).
 \end{itemize}
-
-\end{frame}
-
-%================================================
-\begin{frame}
-\frametitle{References}
-
-\small
-\begin{thebibliography}{9}
-
-\bibitem{deb2002nsga2}
-K. Deb, A. Pratap, S. Agarwal, T. Meyarivan.
-\newblock A fast and elitist multiobjective genetic algorithm: NSGA-II.
-\newblock \emph{IEEE Trans. Evol. Comput.}, 6(2):182--197, 2002.
-
-\bibitem{knowles2000paes}
-J. Knowles, D. Corne.
-\newblock Approximating the nondominated front using the Pareto archived evolution strategy.
-\newblock \emph{Evol. Comput.}, 8(2):149--172, 2000.
-
-\bibitem{coello2004mopso}
-C. A. C. Coello, G. T. Pulido, M. S. Lechuga.
-\newblock Handling multiple objectives with particle swarm optimization.
-\newblock \emph{IEEE Trans. Evol. Comput.}, 8(3):256--279, 2004.
-
-\bibitem{mostaghim2003sigma}
-S. Mostaghim, J. Teich.
-\newblock Strategies for finding good local guides in multi-objective particle swarm optimization.
-\newblock In \emph{Proc. 2003 IEEE Swarm Intelligence Symposium}, 2003.
-
-\bibitem{dorigo1997aco}
-M. Dorigo, L. M. Gambardella.
-\newblock Ant colonies for the travelling salesman problem.
-\newblock \emph{BioSystems}, 43(2):73--81, 1997.
-
-\bibitem{blum2005aco}
-C. Blum.
-\newblock Ant colony optimization: Introduction and recent trends.
-\newblock \emph{Phys. Life Rev.}, 2(4):353--373, 2005.
-
-\bibitem{wilcoxon1945}
-F. Wilcoxon.
-\newblock Individual comparisons by ranking methods.
-\newblock \emph{Biometrics Bulletin}, 1(6):80--83, 1945.
-
-\bibitem{friedman1937}
-M. Friedman.
-\newblock The use of ranks to avoid the assumption of normality implicit in the analysis of variance.
-\newblock \emph{J. Amer. Statist. Assoc.}, 32(200):675--701, 1937.
-
-\end{thebibliography}
 
 \end{frame}
 

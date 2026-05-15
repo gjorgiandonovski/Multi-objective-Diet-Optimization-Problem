@@ -21,8 +21,8 @@ Only the files and directories involved in `main.ipynb` and/or `report.tex` are 
 
 ```
 main.ipynb                 End-to-end experiment pipeline.
-report.tex                 Final report consuming experiments/* artifacts.
-report.pdf                 Compiled report output.
+report.tex                 Technical report (Beamer slides).
+presentation.tex           10-minute academic presentation (Beamer slides).
 
 requirements.txt           Python dependencies.
 pyproject.toml             Package metadata for editable install.
@@ -65,20 +65,16 @@ stac/
   stat_tests.py            Wilcoxon, Friedman aligned ranks, Shaffer/Holm.
 
 experiments/
-  all_runs.csv
-  all_runs_quick.csv
-  tuning_results.csv
-  tuning_results_quick.csv
-  tuning_best.csv
-  tuning_best_quick.csv
-  summary.csv
-  friedman_aligned.csv
-  pairwise_hv.csv
-  pairwise_hv_shaffer.csv
-  demo_overview.png
-  boxplots.png
-  best_pts_subject_1.png
-  emit_latex.py            Prints LaTeX rows from generated CSVs.
+  all_runs.csv             Full benchmark results (750 runs).
+  tuning_results.csv       Hyperparameter tuning sweep results.
+  tuning_best.csv          Best hyperparameters per algorithm.
+  summary.csv              Aggregated metrics by configuration.
+  friedman_aligned.csv     Friedman aligned ranks test output.
+  pairwise_hv.csv          Wilcoxon pairwise HV comparisons.
+  pairwise_hv_shaffer.csv  Wilcoxon results with Shaffer correction.
+  demo_overview.png        Convergence and diversity visualization.
+  boxplots.png             Hypervolume distribution across configurations.
+  best_pts_subject_1.png   Pareto front example for subject 1.
 ```
 
 ## Setup and execution
