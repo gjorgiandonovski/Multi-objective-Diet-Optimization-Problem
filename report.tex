@@ -1,461 +1,385 @@
-\documentclass[10pt]{article}
-% COMPILAR CON XeLaTeX o LuaLaTeX
+\documentclass[aspectratio=169,10pt]{beamer}
+
+% Compile with XeLaTeX or LuaLaTeX
 \usepackage{fontspec}
 \setmainfont{Fira Sans Light}
-\usepackage{geometry}
-\geometry{a4paper, margin=2cm}
-\usepackage[dvipsnames]{xcolor}
-\usepackage{amsmath, amssymb, amsthm}
-\usepackage{mathtools}
-\usepackage{enumitem}
-\usepackage{listings}
-\lstdefinestyle{pyEstilo}{
-    language=Python,
-    basicstyle=\ttfamily\footnotesize,
-    keywordstyle=\color{blue}\bfseries,
-    commentstyle=\color{green!50!black},
-    stringstyle=\color{purple},
-    numbers=left,
-    numberstyle=\tiny\color{gray},
-    breaklines=true,
-    frame=single,
-    tabsize=2,
-}
+
+\usepackage{amsmath,amssymb,mathtools}
 \usepackage{booktabs}
-\usepackage{multirow}
-\usepackage{array}
 \usepackage{graphicx}
-\usepackage{float}
-\usepackage{caption}
-\usepackage[hidelinks]{hyperref}
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{0.4em}
+\usepackage{xcolor}
+
+% NOTE: beamer already loads hyperref; do NOT load it again (avoids option clash)
+
+% Theme (simple, research-like)
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+\setbeamertemplate{navigation symbols}{}
+
+\title[Multi-Objective Diet Optimization]{Multi-Objective Diet Optimization}
+\subtitle{Bioinspired Algorithms for Weekly Meal Planning}
+\author{Group 11: Ismael De Los Santos \and Gjorgi Andonovski}
+\date{2026-05-15}
+
 \begin{document}
 
-%==============================================
-% FRONT COVER
-%==============================================
-\begin{titlepage}
-\centering
-\vspace*{2cm}
+%================================================
+\begin{frame}
+  \titlepage
+\end{frame}
 
-{\Huge\bfseries Multi-objective Diet Optimization Problem\par}
-\vspace{0.4cm}
-{\Large Bioinspired Algorithms for Optimization\par}
+%================================================
+\begin{frame}
+\frametitle{Problem Definition}
+
+\textbf{Goal.} Design 7-day meal plans that minimize two conflicting objectives while respecting food category constraints.
+
+\vspace{0.3cm}
+
+\textbf{Problem structure.}
+\begin{itemize}
+  \item $N=2{,}616$ food items with nutritional data (kcal, carbs, fat, protein).
+  \item 5 user profiles (ages 17, 30, 40, 55, 72) with targets 1{,}401--3{,}103 kcal/day.
+  \item 77 decision variables: 7 days $\times$ 11 meal slots per day.
+  \item Each slot restricted to admissible set $D_j$ (snacks, breakfast, lunch, dinner).
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Two objectives (minimize).}
+\begin{align*}
+f_1(\mathbf{x}) &= \sum_{d=1}^{7} \left|K(\mathbf{x},d) - T\right|
+\quad \text{(caloric deviation)} \\
+f_2(\mathbf{x}) &= \sum_{d=1}^{7} \Bigl(\left|p_C-50\right| + \left|p_F-27.5\right| + \left|p_P-22.5\right|\Bigr)
+\quad \text{(macronutrient imbalance)}
+\end{align*}
+
+\textbf{Feasibility.} $x_j \in D_j$ for all $j=1,\dots,77$ (enforced by encoding).
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Solution Encodings}
+
+\textbf{Two representation types.}
+
+\begin{itemize}
+  \item \textbf{Direct-Index (integer vector):}
+  \[
+  \mathbf{x} \in \{1,\dots,2616\}^{77}.
+  \]
+  Gene $j$ stores the food ID assigned to slot $j$.
+  Feasibility is enforced by sampling and mutating within $D_j$.
+
+  \item \textbf{Random-Key (real vector):}
+  \[
+  \mathbf{k} \in [0,1]^{77}.
+  \]
+  Decoding: interval $[0,1]$ split into $|D_j|$ equal bins; $k_j$ selects the corresponding food.
+  Any key vector decodes to a feasible plan.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Feasibility-preserving design.}
+\begin{itemize}
+  \item Generator only draws from admissible domains $D_j$.
+  \item All variators (mutation, crossover) respect domain constraints.
+  \item Zero infeasible solutions are generated; no repair/penalty strategies are needed.
+\end{itemize}
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Fitness Function Computation}
+
+\textbf{Input:} solution $\mathbf{x}$ (or decoded $\mathbf{x}$ from random keys).
+
 \vspace{0.2cm}
-{\large Group Project Assignment\par}
-\vspace{2.5cm}
 
-{\large\bfseries Group Identifier: 11\par}
-\vspace{1.5cm}
-
-{\large\bfseries Members and Contribution\par}
-\vspace{0.6cm}
-
-\begin{tabular}{lr}
-\toprule
-\textbf{Member} & \textbf{Contribution (\%)} \\
-\midrule
-Ismael De Los Santos & 50\% \\
-Gjorgi Andonovski & 50\% \\
-\bottomrule
-\end{tabular}
-
-\vspace{1.5cm}
-{\large\bfseries Professors: Cristian Ramírez Atencia, Ángel Panizo LLedot\par}
-
-\vfill
-{\large Universidad Politécnica de Madrid\par}
-{\large \today \par}
-\end{titlepage}
-
-\tableofcontents
-\newpage
-
-%==============================================
-% ABSTRACT
-%==============================================
-\section*{Abstract}
-
-This work addresses the multi-objective weekly diet planning problem from the Bioinspired Algorithms for Optimization (BAO) course. Given a database of 2{,}616 real food items and a user profile with a daily caloric target, the goal is to build a seven-day meal plan covering five daily meals (morning snack, breakfast, lunch, afternoon snack and dinner), where each slot may only be filled by foods from the appropriate category. The problem has two conflicting objectives: minimise the total weekly deviation from the caloric target, and minimise the total weekly deviation from a macronutrient split of 50\% carbohydrates, 27.5\% fat and 22.5\% protein.
-
-We model the problem as a constrained two-objective minimisation over a 77-gene weekly chromosome and solve it with four bioinspired metaheuristics covering both course families: \textbf{NSGA-II} and \textbf{PAES} as evolutionary baselines, and \textbf{MOPSO} and \textbf{P-ACO} as swarm-intelligence methods. Two encodings are compared, direct integer indices and random keys, both behind a common representation interface. A constraint-handling ablation on NSGA-II direct-index compares \emph{repair}, \emph{penalty} and \emph{death-penalty}; because the domain-aware variator never creates infeasible solutions, the three handlers produce identical quality metrics. From the results section onwards we therefore report NSGA-II direct-index as a single entry and contrast it with the random-key variant, while keeping a separate runtime breakdown for the handlers.
-
-The full benchmark comprises 1{,}050 runs across seven configurations (30 replicates $\times$ 5 subjects each), evaluated using hypervolume, IGD, Schott's spacing and Deb's $\Delta$-spread. Statistical analysis follows the BAO chapter~6 protocol: Friedman Aligned Ranks for the omnibus and pairwise Wilcoxon signed-ranks with Shaffer's static correction for the post-hoc.
-
-%==============================================
-% PROBLEM
-%==============================================
-\newpage
-\section{Problem Formulation}
-\label{sec:problem_formulation}
-
-\subsection{Context and Motivation}
-
-Diet planning is a common challenge in clinical nutrition, sports science and consumer health. Designing an optimal weekly meal plan requires meeting a personalised daily caloric target $T$ while maintaining a specific macronutrient distribution (50\% carbohydrates, 27.5\% fats, 22.5\% proteins). Balancing these objectives is difficult because improving one can degrade the other --- adding a high-protein item may push the caloric total beyond $T$, while replacing it with a lower-calorie alternative may unbalance the macronutrient ratios.
-
-Constructing feasible plans by hand is impractical given the size of the catalogue and the per-meal category restrictions. From an optimisation standpoint, this is a constrained, combinatorial, multi-objective problem with non-linear macronutrient ratios; exact methods such as Integer Linear Programming are computationally intractable, which makes bioinspired metaheuristics a natural choice because they explore large discrete search spaces efficiently and handle conflicting objectives without gradient information.
-
-\subsection{Formal Problem Definition}
-\label{sec:formal_definition}
-
-We formalise the problem through its decision variables, domain constraints and objective functions.
-
-\subsubsection{Decision Variables and Structure}
-A candidate solution is a \emph{weekly meal plan} for a single user, spanning 7 days ($d \in \{1, \dots, 7\}$). Each day consists of five distinct meals, partitioned into specific consumption slots:
-\begin{itemize}[leftmargin=*, itemsep=0.2em]
-    \item \textbf{Morning \& Afternoon Snacks:} 1 slot each (fruit or sugar items).
-    \item \textbf{Breakfast:} 3 slots (1 drink, 2 solid foods).
-    \item \textbf{Lunch \& Dinner:} 3 slots each (1 drink, 2 solid foods).
-\end{itemize}
-This yields 11 slots per day, totalling $77$ slots per weekly plan. A solution is thus represented as a vector $\mathbf{x} \in \mathbb{N}^{77}$, where each decision variable $x_j$ ($j \in \{1, \dots, 77\}$) is the index of the food item assigned to slot~$j$.
-
-\subsubsection{Admissible Food Sets and Search Space}
-Let $\mathcal{F} = \{1, \dots, 2616\}$ denote the complete catalogue of food indices. Foods are categorised via hierarchical group prefixes (e.g.\ {FA} for fruits, {A} for cereals). To ensure culinary and nutritional coherence, each slot $j$ is restricted to a pre-computed \emph{admissible set} $D_j \subseteq \mathcal{F}$, dynamically adjusted based on the user's age:
-
-\begin{itemize}[leftmargin=*, itemsep=0.2em]
-    \item \textbf{Snacks:} Restricted to fruits ({F}) and sugars ({S}).
-    \item \textbf{Breakfast Drinks:} Dairy ({BA}, {BH}), infusions/powders ({PA}) and juices ({FE}, {FC}).
-    \item \textbf{Breakfast Foods:} Cereals ({A}), eggs ({C}), fruits ({FA}) and bacon ({MAA}), explicitly excluding heavy carbs such as rice, pasta or pizza ({AC}, {AD}, {AE}).
-    \item \textbf{Lunch/Dinner Drinks:} General beverages ({P}, {FC}, {FE}); alcoholic drinks ({Q}) are admitted only if age~$\ge 18$.
-    \item \textbf{Lunch/Dinner Foods:} Substantive cereals ({AC, AD, AE, AF}) and any item not classified under breakfast/snack-exclusive categories.
-\end{itemize}
-
-A weekly plan $\mathbf{x}$ is \emph{feasible} iff $x_j \in D_j$ for all $j$. The feasible search space has size $\prod_{j=1}^{77} |D_j|$; since $|D_j|$ ranges from dozens to thousands of items, the total number of combinations is astronomically large, reinforcing the need for stochastic search.
-
-\subsubsection{Multi-Objective Optimisation Model}
-For a given day $d$, let $K(\mathbf{x},d)$ be the total consumed calories and let $C(\mathbf{x},d)$, $F(\mathbf{x},d)$, $P(\mathbf{x},d)$ be the total grams of carbohydrates, fats and proteins. Using Atwater factors, the caloric contribution from each macronutrient is
-\begin{equation}
-    K_C^{(d)} = 4\,C(\mathbf{x},d), \quad K_F^{(d)} = 9\,F(\mathbf{x},d), \quad K_P^{(d)} = 4\,P(\mathbf{x},d).
-\end{equation}
-The total daily macronutrient calories are $K_T^{(d)} = K_C^{(d)} + K_F^{(d)} + K_P^{(d)}$, and the percentage contribution of each macronutrient is $p_{M}^{(d)} = 100 \times K_M^{(d)} / K_T^{(d)}$ for $M \in \{C, F, P\}$. The optimisation problem then reads
-\begin{align}
-    \text{Minimise} \quad f_1(\mathbf{x}) &= \sum_{d=1}^{7} \bigl| K(\mathbf{x},d) - T \bigr| \label{eq:f1_energy} \\[0.4em]
-    \text{Minimise} \quad f_2(\mathbf{x}) &= \sum_{d=1}^{7} \Bigl( \bigl| p_C^{(d)} - 50 \bigr| + \bigl| p_F^{(d)} - 27.5 \bigr| + \bigl| p_P^{(d)} - 22.5 \bigr| \Bigr) \label{eq:f2_macros}
-\end{align}
-subject to $x_j \in D_j \ \forall j \in \{1, \dots, 77\}$.
-
-\textit{Note on constraints:} the original assignment specified a 55\% carbohydrate target alongside 27.5\% fats and 22.5\% proteins. After consultation with the instructors we corrected this to 50\% so the three percentages sum to 100\%. Consequently, the theoretical optimum for $f_2$ is zero, attained when the daily proportions match the dietary split exactly.
-
-%==============================================
-% ALGORITHM DESIGN
-%==============================================
-\section{Algorithm Design}
-
-\subsection{Metaheuristics used}
-
-Four metaheuristics span both course families. All four return Pareto archives, share the same feasibility logic, fitness function and metric pipeline, so that any observed difference is attributable to the algorithm itself rather than to evaluation plumbing.
-
-\begin{itemize}[leftmargin=1.2em, itemsep=0.3em]
-\item \textbf{NSGA-II} \emph{(evolutionary)} [1]. Selection by non-dominated sorting plus crowding-distance preservation. The de-facto baseline for Pareto-based EAs.
-\item \textbf{PAES} \emph{(evolutionary)} [2]. A $(1{+}1)$ evolution strategy paired with an adaptive grid archive. Contrasts NSGA-II both in cardinality (single working solution rather than a population) and in selection mechanism (archive-based rather than dominance-based), which makes it a complementary baseline.
-\item \textbf{MOPSO} \emph{(swarm)} [3,5]. Particles move in random-key space, guided by leaders from an external non-dominated archive. The primary leader rule is the Sigma method of Mostaghim and Teich; a random archive pick is available as a fallback. The archive is bounded with crowding-distance pruning.
-\item \textbf{P-ACO} \emph{(swarm)}. Ants construct direct-index weekly plans from per-slot pheromone distributions; archive members reinforce the trails without collapsing the objectives into a weighted sum, and crowding-distance pruning preserves diversity.
-\end{itemize}
-
-\subsection{Codifications}
-\label{sec:codifications}
-
-Two encodings are implemented under a common {Representation} interface ({diet\_bao/representations}). NSGA-II uses both; PAES and P-ACO use direct-index only; MOPSO uses random-key only (required by its velocity update).
-
-\begin{itemize}[leftmargin=1.2em, itemsep=0.15em]
-\item \textbf{Direct-index encoding.} A weekly plan is a length-77 integer vector, one gene per slot. Gene $j$ stores the food ID chosen for that slot, and its admissible domain is the precomputed set $D_j$. The initial generator samples each gene uniformly from $D_j$. Mutation is \emph{domain-aware}: with probability equal to the mutation rate a gene is re-sampled uniformly from $D_j$, otherwise it is left unchanged. Crossover is standard $n$-point crossover; it remains feasible because both parents are feasible and each position can only contain values from its own $D_j$.
-\item \textbf{Random-key encoding.} A weekly plan is a length-77 real vector $\mathbf{k} \in [0,1]^{77}$. Decoding maps each $k_j$ to a food in $D_j$ by splitting $[0,1]$ into $|D_j|$ equal-width bins, so \emph{every} vector in $[0,1]^{77}$ decodes to a feasible plan. Mutation uses Gaussian noise ($\sigma=0.1$) with boundary reflection; crossover again uses the default $n$-point operator.
-\end{itemize}
-
-\subsection{Constraint handling and a structural equivalence result}
-\label{sec:constraints}
-
-Three handlers were implemented ({repair}, {penalty}, {death\_penalty}) behind a shared {ConstraintHandler} protocol. The ablation we report applies them to NSGA-II direct-index, the only configuration in our suite where a violation could in principle occur.
-
-Across 150 replicates per handler we observed that the three handlers produce identical hypervolume, IGD, spacing, $\Delta$-spread, best $f_1$ and best $f_2$. The cause is structural: the domain-aware variator never emits an infeasible candidate. Mutation either leaves a gene unchanged (already valid by construction) or re-samples it directly from $D_j$; $n$-point crossover swaps whole segments between two feasible parents and each position is independently constrained to its own $D_j$. The handlers are still called during evaluation, but because the violation count is always zero they do not change candidate fitness values. As a result, all three search trajectories coincide.
-
-\emph{Reporting consequence.} Since the three direct-index handlers have the same quality metrics, Section~\ref{sec:results} reports NSGA-II as two configurations only: {nsga2\_di\_repair} (direct-index) and {nsga2\_rk\_repair} (random-key). The {penalty} and {death} variants are included only in the runtime breakdown, because their extra feasibility checks are the only observed difference (Table~\ref{tab:handler_runtime}). MOPSO and P-ACO carry {constraint\_handler: "none"} because their feasible construction mechanisms do not require a separate handler.
-
-\subsection{Implementation details}
-
-The project is written in Python 3.10+ and uses {inspyred} for NSGA-II and PAES. MOPSO and P-ACO are native implementations built on the same fitness and archive interfaces as the EA variants. Supporting dependencies are {mysql-connector-python} for database access, {numpy}/{pandas} for data manipulation, {scipy.stats} for statistical tests and {matplotlib} for visualisation. The food database is restored from the course-provided MySQL dump and queried through {diet\_bao.data}.
-
-Two optional extensions sit alongside the main benchmark: (i) a multiprocessing execution path ({BenchmarkPlan}) that distributes the experimental grid across CPU cores without affecting per-run timing; and (ii) a memetic NSGA-II variant that injects a 1-step Lamarckian local search via a {memetic\_rate} parameter. Both are excluded from the main comparison tables to keep them directly comparable.
-
-The codebase is organised around clear responsibilities:
-\begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
-\item {representations/}: {direct\_index} and {random\_key} encodings behind a shared protocol.
-\item {constraints/}: {repair}, {penalty} and {death\_penalty} handlers behind a shared protocol.
-\item {metrics/}: pure-Python implementations of 2D hypervolume, IGD, Schott's spacing and Deb's $\Delta$-spread.
-\item {ea/} and {si/}: algorithm wrappers ({nsga2\_diet}, {paes\_diet}, {mopso\_diet}, {paco\_diet}).
-\item {experiment/}: benchmark composition ({AlgorithmConfig}, {BenchmarkPlan}, {run\_all\_subjects}) and visualisation helpers.
-\item {stac/}: Wilcoxon signed-ranks, Friedman, Friedman Aligned Ranks, Shaffer's post-hoc and Holm correction.
-\end{itemize}
-A suite of unit and integration tests is run with {pytest} before any experiment. Listing~\ref{lst:mut} shows the domain-aware mutation that drives the equivalence result of Section~\ref{sec:constraints}.
-
-\begin{lstlisting}[style=pyEstilo, caption={Domain-aware mutation for direct-index NSGA-II. Because every gene either stays unchanged or is re-sampled from its own $D_j$, the operator cannot emit an infeasible candidate.}, label={lst:mut}]
-def variator(random, candidates, args):
-    rate = float(args.get("mutation_rate", 0.1))
-    out = []
-    for cand in candidates:
-        mutant = list(cand)
-        for i, domain in enumerate(state.per_position):
-            if mutant[i] not in domain or random.random() < rate:
-                mutant[i] = domain[random.randrange(len(domain))]
-        out.append(mutant)
-    return out
-\end{lstlisting}
-
-%==============================================
-% EXPERIMENTS DESIGN
-%==============================================
-\section{Experiment Design}
-
-\subsection{Parameter settings and tuning protocol}
-\label{sec:tuning}
-
-The notebook implements a deliberate \textbf{tuning sweep} on subjects~1 and~4 (one large and one small caloric target), with 5 replicates per cell, selecting configurations by highest mean hypervolume and breaking ties by mean runtime. The grids are:
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{lll}
-\toprule
-\textbf{Algorithm} & \textbf{Swept dimensions} & \textbf{Candidate values} \\
-\midrule
-NSGA-II    & pop, gen, mut.\ rate                    & $\{40,80\}\times\{40,80\}\times\{0.05,0.1,0.2\}$ (12 cells) \\
-PAES       & gen, archive size, mut.\ rate           & $\{400,800\}\times\{40,80\}\times\{0.05,0.1,0.2\}$ (12 cells) \\
-MOPSO      & pop, gen, archive, accel.                & $\{30,60\}\times\{40,80\}\times\{40,80\}\times\{1.5,2.0\}$ (16 cells) \\
-P-ACO      & pop, gen, archive, evaporation           & $\{30,60\}\times\{40,80\}\times\{40,80\}\times\{0.05,0.1\}$ (16 cells) \\
-\bottomrule
-\end{tabular}
-\caption{Per-algorithm hyperparameter sweep: 56 cells total, replicated 5 times on each of 2 subjects (560 tuning runs).}
-\label{tab:tuning_grid}
-\end{table}
-
-The full tuning results are saved to {experiments/tuning\_results.csv} and the picked winners to {experiments/tuning\_best.csv}. Table~\ref{tab:tuning_winners} reports the actual settings consumed by the full benchmark.
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{llrr}
-\toprule
-\textbf{Algorithm} & \textbf{Settings selected} & \textbf{Mean HV (tuning)} & \textbf{Mean rt.\ (s)} \\
-\midrule
-NSGA-II    & pop=80, gen=80, mut=0.2                                & 969{,}654 & 1.39 \\
-PAES       & pop=1, gen=800, archive=40, mut=0.1                    & 474{,}575 & 1.93 \\
-MOPSO      & pop=30, gen=80, archive=80, $w=0.4$, $c_1=c_2=2.0$     & 489{,}401 & 0.30 \\
-P-ACO      & pop=60, gen=40, archive=40, $\rho=0.1$, $\alpha=1$, $\tau_0=1$ & 459{,}679 & 22.69 \\
-\bottomrule
-\end{tabular}
-\caption{Hyperparameter winners from the tuning sweep ({experiments/tuning\_best.csv}). PAES uses a $(1{+}1)$-ES so its population is~1 by construction; we compensate with a larger generation budget.}
-\label{tab:tuning_winners}
-\end{table}
-
-Seven main-grid configurations consume the settings in Table~\ref{tab:tuning_winners}. Three of them ({nsga2\_di\_repair/penalty/death}) form the constraint-handler ablation discussed in Section~\ref{sec:constraints}; they share every hyperparameter and differ only in the handler. The remaining four span the EA/swarm comparison and the encoding comparison.
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{lllrrl}
-\toprule
-\textbf{Config id} & \textbf{Algorithm} & \textbf{Encoding} & \textbf{Pop} & \textbf{Gen} & \textbf{Notes} \\
-\midrule
-{nsga2\_di\_repair}\,$^{\dagger}$   & NSGA-II    & direct\_index & 80 & 80 & repair handler, mut.\ rate 0.2 \\
-{nsga2\_di\_penalty}\,$^{\dagger}$  & NSGA-II    & direct\_index & 80 & 80 & penalty $(1000,10)$ per violation \\
-{nsga2\_di\_death}\,$^{\dagger}$    & NSGA-II    & direct\_index & 80 & 80 & infeasible $\to +\infty$ \\
-{nsga2\_rk\_repair}    & NSGA-II    & random\_key   & 80 & 80 & Gaussian mutation $\sigma=0.1$ \\
-{paes\_di\_repair}     & PAES       & direct\_index & 1  & 800 & archive size 40, mut.\ rate 0.1 \\
-{mopso\_rk}            & MOPSO      & random\_key   & 30 & 80 & Sigma leader, archive 80 \\
-{paco\_di}             & P-ACO      & direct\_index & 60 & 40 & per-slot pheromones, archive 40 \\
-\bottomrule
-\end{tabular}
-\caption{Seven main-grid configurations used in the full experiment. $\dagger$~The three NSGA-II direct-index handlers produce identical fronts and metrics (Section~\ref{sec:constraints}); the results section reports them as the single representative entry {nsga2\_di\_repair}.}
-\label{tab:configs}
-\end{table}
-
-\subsection{Experimental setup}
-
-The seven configurations are executed across the five user profiles with 30 stochastic replicates each, for a total of $7 \times 5 \times 30 = 1{,}050$ runs. Per-replicate seeds are deterministic and unique ({seed0+r}), making the experiment fully reproducible. The notebook {main.ipynb} schedules every (subject, configuration, seed) triple through {concurrent.futures.ProcessPoolExecutor} ({BenchmarkPlan(n\_jobs=4)} by default) and writes the raw rows to {experiments/all\_runs.csv}. The parallel execution path only affects wall-clock throughput: each replicate is still timed independently, so the runtime column remains comparable across configurations.
-
-\paragraph{Metrics.} For every run we record the best $f_1$, the best $f_2$, the runtime and the size of the Pareto front. From the raw front we additionally compute four multi-objective indicators:
-\begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
-\item \textbf{Hypervolume (HV).} 2D area dominated by the front relative to a common per-subject reference point, set from the worst objective values observed across all fronts for that subject with a $1.1\!\times$ padding plus a small offset. Higher is better.
-\item \textbf{Inverted generational distance (IGD).} Mean Euclidean distance from each point of a per-subject reference set (the union of all fronts produced by all algorithms on that subject) to the nearest point of the obtained front. Lower is better.
-\item \textbf{Schott's spacing.} Standard deviation of consecutive Euclidean distances along the front. Lower is more uniform.
-\item \textbf{Delta Spread (Deb's $\Delta$).} The diversity metric taught in BAO chapter~6.2, combining front extent and uniformity: $\Delta = (\sum_j d_j^e + \sum_i |d_i - \bar d|) / (\sum_j d_j^e + |S|\,\bar d)$. Lower is better.
-\end{itemize}
-
-\paragraph{Statistical tests.} Following the BAO chapter~6 protocol (``Comparing Algorithms Output''), our 30 replicates are paired across configurations because they share the same seed schedule, so we use the two-sided \textbf{Wilcoxon signed-ranks test} [9] for 1-vs-1 paired comparisons. The omnibus across configurations uses the \textbf{Friedman Aligned Ranks test} [8], a more powerful variant of plain Friedman that ranks all block-aligned observations together. The N-vs-N post-hoc analysis is pairwise Wilcoxon with \textbf{Shaffer's static correction} [11]; Holm--Bonferroni [10] is also generated as a conservative companion check.
-
-\paragraph{Limitations.}
-\begin{enumerate}[label=(\roman*), leftmargin=1.6em, itemsep=0.1em]
-\item \textbf{Single dataset.} Only the course-provided NutritionPlanning database is used; findings may not transfer to food catalogues with different category structures.
-\item \textbf{Degenerate constraint comparison.} Because the direct-index variator (both mutation and $n$-point crossover) always produces feasible candidates, the three NSGA-II constraint handlers never change the search trajectory and produce identical quality metrics. A meaningful empirical separation would require a variator that can produce infeasible candidates (see Future Work).
-\item \textbf{Small tuning sweep.} The hyperparameter grid covers 12--16 cells per algorithm and is evaluated on only two of the five subjects.
-\item \textbf{User preferences not used.} The database carries preference, dislike and allergy lists per subject; they are loaded but not yet incorporated into the fitness function or constraints.
+\textbf{For each day $d \in \{1,\dots,7\}$:}
+\begin{enumerate}
+  \item Sum daily energy and macronutrients from assigned food items.
+  \item Compute daily caloric total $K(\mathbf{x},d)$.
+  \item Compute macronutrient energy percentages $p_C, p_F, p_P$ (Atwater factors: 4/9/4).
+  \item Accumulate deviations: $\left|K(\mathbf{x},d) - T\right|$ and $\left|p_M - \text{target}_M\right|$.
 \end{enumerate}
 
-\subsection{Data description}
+\vspace{0.2cm}
 
-The MySQL dump provided by the course contains \textbf{2{,}616 food items}, each annotated with a hierarchical food-group prefix and per-item macronutrient content (kcal, carbohydrates, fat and protein, in grams per serving). It also contains \textbf{five user profiles} (ids 1--5) covering ages 17, 30, 40, 55 and 72, with caloric targets ranging from 1{,}401 to 3{,}103 kcal/day. Each profile additionally carries preference, dislike and allergy lists; these are loaded but not used in the present optimisation. All 2{,}616 foods participate in the experiments, and all five subjects are used for the comparison.
-
-%==============================================
-% EXPERIMENTAL RESULTS
-%==============================================
-\section{Experimental Results}
-\label{sec:results}
-
-\paragraph{Result source.} The tables and figures in this section are drawn from {experiments/all\_runs.csv} (1{,}050 rows: 7 configurations $\times$ 5 subjects $\times$ 30 replicates). As established in Section~\ref{sec:constraints}, the three direct-index NSGA-II handlers produce identical quality metrics across all 150 replicates; from this point onwards we report NSGA-II as two distinct configurations only --- direct-index and random-key --- yielding five distinct entries in every quality-metric table. A separate breakdown (Table~\ref{tab:handler_runtime}) reports the only quantity in which the three handlers differ, namely runtime overhead.
-
-\subsection{Aggregated metrics}
-
-Table~\ref{tab:summary} reports the mean of every metric across the 30 replicates and 5 subjects per configuration ($n=150$ per row), computed from {experiments/all\_runs.csv}. Best value per metric is in bold.
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{lrrrrrrrr}
-\toprule
-\textbf{Config} & \textbf{HV $\uparrow$} & \textbf{IGD $\downarrow$} & \textbf{Spacing $\downarrow$} & \textbf{$\Delta$-Spread $\downarrow$} & \textbf{$f_1$ best $\downarrow$} & \textbf{$f_2$ best $\downarrow$} & \textbf{Rt.\ (s) $\downarrow$} & \textbf{Front} \\
-\midrule
-{nsga2\_di\_repair}\,$^{\dagger}$ & 1{,}014{,}630 & 171.75 & \textbf{97.71} & 0.82 & 1{,}343.37 & 167.77 & 1.38 & 80.00 \\
-{nsga2\_rk\_repair} & \textbf{1{,}059{,}760} & \textbf{120.20} & 104.68 & 0.83 & \textbf{1{,}105.10} & 167.11 & 1.46 & 80.00 \\
-{paes\_di\_repair}  & 401{,}023 & 438.80 & 185.66 & 1.09 & 1{,}987.88 & \textbf{123.92} & 1.94 & 38.89 \\
-{mopso\_rk}         & 403{,}726 & 640.46 & 329.51 & 0.94 & 2{,}362.58 & 175.30 & \textbf{0.37} & 17.95 \\
-{paco\_di}          & 435{,}310 & 783.09 & 438.22 & \textbf{0.78} & 2{,}700.35 & 179.80 & 33.50 & 9.13 \\
-\bottomrule
-\end{tabular}
-\caption{Mean metrics per configuration over $n=150$ runs (30 replicates $\times$ 5 subjects). Bold marks the best value in each column. $\dagger$~Representative of the three NSGA-II direct-index handlers ({repair}, {penalty}, {death}), which produce identical quality metrics (Section~\ref{sec:constraints}); their runtime differences are reported separately in Table~\ref{tab:handler_runtime}.}
-\label{tab:summary}
-\end{table}
-
-\paragraph{Handler runtime breakdown.} Quality metrics are bit-identical across the three NSGA-II direct-index handlers, but mean runtime is not: {penalty} and {death\_penalty} still invoke {count\_violations} on every individual even when no violations exist, while {repair} short-circuits the same check. The overhead is approximately $2\times$ on this workload (Table~\ref{tab:handler_runtime}).
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{lrr}
-\toprule
-\textbf{Handler} & \textbf{Mean rt.\ (s)} & \textbf{Std.\ rt.\ (s)} \\
-\midrule
-{nsga2\_di\_repair}  & 1.38 & 0.03 \\
-{nsga2\_di\_death}   & 2.72 & 0.04 \\
-{nsga2\_di\_penalty} & 2.73 & 0.05 \\
-\bottomrule
-\end{tabular}
-\caption{Runtime breakdown for the three NSGA-II direct-index constraint handlers ($n=150$ each). All other metrics (HV, IGD, spacing, $\Delta$-spread, $f_1$, $f_2$) are identical across the three rows and therefore omitted; see Table~\ref{tab:summary} for the shared values.}
-\label{tab:handler_runtime}
-\end{table}
-
-\subsection{Statistical significance}
-
-The \textbf{Friedman Aligned Ranks} omnibus across all seven configurations rejects the null on every metric ($p < 10^{-70}$ in every case). Table~\ref{tab:ranks} reports the average aligned ranks per configuration on three representative metrics; lower rank means better performance. Since the three NSGA-II direct-index handlers tie exactly on every quality metric (their aligned ranks for HV, IGD, $\Delta$-spread and spacing are identical at $310.22$, $340.09$, $437.93$ and $337.20$ respectively), they share a row in the quality columns.
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Config} & \textbf{HV rank $\downarrow$} & \textbf{IGD rank $\downarrow$} & \textbf{Runtime rank $\downarrow$} \\
-\midrule
-{nsga2\_rk\_repair}      & 331.07          & \textbf{260.57} & 369.34          \\
-{nsga2\_di\_repair}\,$^{\dagger}$ & \textbf{310.22} & 340.09          & 231.66          \\
-{paes\_di\_repair}       & 805.51          & 653.99          & 525.50          \\
-{mopso\_rk}              & 819.96          & 839.11          & \textbf{75.50} \\
-{paco\_di}               & 791.29          & 904.57          & 975.50          \\
-\bottomrule
-\end{tabular}
-\caption{Friedman Aligned Ranks per metric (lower is better, $n=150$ aligned blocks per configuration). For hypervolume the aligned observations are sign-flipped so that better HV maps to a lower rank. Omnibus statistics: HV $T=585.92$, IGD $T=643.99$, runtime $T=870.80$; $p<10^{-70}$ in every case. $\dagger$~The HV and IGD ranks are shared with {nsga2\_di\_penalty} and {nsga2\_di\_death}; on runtime they sit at 751.73 and 749.27 respectively, reflecting the overhead reported in Table~\ref{tab:handler_runtime}.}
-\label{tab:ranks}
-\end{table}
-
-The pairwise \textbf{Wilcoxon signed-ranks test with Shaffer's static correction} on hypervolume yields a clear NSGA-II/non-NSGA-II split:
-\begin{itemize}[leftmargin=1.2em, itemsep=0.1em]
-\item \textbf{NSGA-II $\gg$ everything else.} Both NSGA-II variants are significantly better on HV than PAES, MOPSO and P-ACO (all adjusted $p$-values are well below $\alpha=0.05$).
-\item \textbf{Within NSGA-II:} the random-key variant has the highest mean HV and the best mean IGD, but its HV advantage over direct-index is \emph{not} statistically significant ($p_{\mathrm{raw}}=0.359$, $p_{\mathrm{adj}}=0.359$).
-\item \textbf{Constraint handlers:} every pairwise comparison between {repair}, {penalty} and {death\_penalty} on HV yields $p_{\mathrm{adj}}=1.0$ exactly, confirming the structural equivalence of Section~\ref{sec:constraints}.
-\item \textbf{Non-NSGA-II tier:} PAES, MOPSO and P-ACO are not significantly different from one another on HV after Shaffer correction (MOPSO vs.\ P-ACO $p_{\mathrm{adj}}=0.189$, MOPSO vs.\ PAES $p_{\mathrm{adj}}=0.908$, P-ACO vs.\ PAES $p_{\mathrm{adj}}=0.193$).
+\textbf{Final objectives:}
+\begin{itemize}
+  \item $f_1 = \sum_{d=1}^{7} \left|K(\mathbf{x},d) - T\right|$.
+  \item $f_2 = \sum_{d=1}^{7}\left(\left|p_C-50\right| + \left|p_F-27.5\right| + \left|p_P-22.5\right|\right)$.
 \end{itemize}
 
-\subsection{Visualisations}
+\vspace{0.2cm}
 
-Figure~\ref{fig:demo} contrasts the five distinct configurations on a single run for subject~1: Pareto fronts (left), best scalar value over generations as a convergence proxy (middle), and front/archive size over generations as a diversity proxy (right). Figure~\ref{fig:boxplots} summarises the distribution of every metric across the 150-run sample per configuration. Figure~\ref{fig:bestpts} shows the cloud of best $(f_1, f_2)$ values per run on subject~1.
+\textbf{Multi-objective fitness.} Both $f_1$ and $f_2$ are minimized; Pareto dominance ranks solutions.
 
-\begin{figure}[H]
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Four Metaheuristics}
+
+\textbf{Evolutionary Algorithms}
+\begin{itemize}
+  \item \textbf{NSGA-II:} non-dominated sorting + crowding distance; pop=80, gen=80; evaluated with both encodings.
+  \item \textbf{PAES:} $(1{+}1)$ evolution strategy with adaptive grid archive; gen=800; direct-index only.
+\end{itemize}
+
+\textbf{Swarm Algorithms}
+\begin{itemize}
+  \item \textbf{MOPSO:} particles guided by sigma-rule leaders from external archive; pop=30, gen=80; random-key only.
+  \item \textbf{P-ACO:} ants construct plans via per-slot pheromone sampling; archive-based reinforcement; pop=60, gen=40; direct-index only.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{All share:} same objectives, same feasibility logic, and the same metric/statistical pipeline for fair comparison.
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Variation Operators and Search Behavior}
+
+\textbf{Direct-Index operators (NSGA-II, PAES, P-ACO construction output).}
+\begin{itemize}
+  \item \textbf{Mutation:} if gene $j$ is selected, replace $x_j$ with a fresh uniform draw from $D_j$.
+  \item \textbf{Crossover:} multi-point crossover; offspring remain feasible because genes are copied position-wise from feasible parents.
+\end{itemize}
+
+\vspace{0.25cm}
+
+\textbf{Random-Key operators (NSGA-II-RK, MOPSO).}
+\begin{itemize}
+  \item \textbf{Mutation:} Gaussian perturbation ($\sigma=0.1$) + reflection/clamp to $[0,1]$.
+  \item \textbf{Crossover:} multi-point crossover in key space.
+\end{itemize}
+
+\vspace{0.25cm}
+
+\textbf{Behavioral contrast.}
+\begin{itemize}
+  \item NSGA-II explores the trade-off surface with diversity pressure.
+  \item PAES follows a single trajectory and accepts moves that improve archive coverage.
+\end{itemize}
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{MOPSO and P-ACO: Swarm Implementations}
+
+\textbf{MOPSO (random-key space).}
+\begin{itemize}
+  \item Particle position $\mathbf{k}_i(t)\in[0,1]^{77}$; velocity $\mathbf{v}_i(t)\in\mathbb{R}^{77}$.
+  \item External archive stores non-dominated solutions; pruned by crowding distance.
+  \item Leader selection favors sparse regions (sigma-rule / diversity-based leader pick).
+  \item Decoding maps keys $\mathbf{k}$ to a feasible food plan $\mathbf{x}$ after each update.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{P-ACO (direct-index space).}
+\begin{itemize}
+  \item Ants sequentially fill the 77 slots by sampling from $D_j$ with pheromone weights $\tau_{j,f}$.
+  \item Pheromone reinforcement uses archive members (diversity-weighted deposits).
+  \item Evaporation prevents trail collapse; bounds $\tau_{\min},\tau_{\max}$ maintain exploration.
+\end{itemize}
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Experimental Framework}
+
+\textbf{Hyperparameter tuning.}
+\begin{itemize}
+  \item Performed on 2 subjects with 5 replicates per parameter cell.
+  \item Select by highest mean hypervolume (tie-break by runtime).
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Full benchmark.}
+\begin{itemize}
+  \item 5 configurations: NSGA-II (DI, RK), PAES (DI), MOPSO (RK), P-ACO (DI).
+  \item 5 subjects $\times$ 30 replicates per configuration $\Rightarrow$ 750 total runs.
+  \item Paired seeds across configurations for paired tests.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Metrics and statistics.}
+\begin{itemize}
+  \item HV, IGD, spacing, $\Delta$-spread, best $f_1$, best $f_2$, runtime.
+  \item Friedman aligned ranks (omnibus) + Wilcoxon signed-ranks (pairwise) with correction.
+\end{itemize}
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Results Summary (Mean over 150 runs per config)}
+
+\begin{table}
+\centering\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Config} & \textbf{HV} & \textbf{IGD} & \textbf{$f_1$ best} & \textbf{Rt (s)} \\
+\midrule
+NSGA-II RK & 1{,}059{,}760 & 120.20 & 1{,}105.10 & 1.46 \\
+NSGA-II DI & 1{,}014{,}630 & 171.75 & 1{,}343.37 & 1.38 \\
+PAES DI    & 401{,}023     & 438.80 & 1{,}987.88 & 1.94 \\
+MOPSO RK   & 403{,}726     & 640.46 & 2{,}362.58 & \textbf{0.37} \\
+P-ACO DI   & 435{,}310     & 783.09 & 2{,}700.35 & 33.50 \\
+\bottomrule
+\end{tabular}
+\caption{Aggregated results across 5 subjects $\times$ 30 replicates ($n=150$ per configuration).}
+\end{table}
+
+\vspace{0.2cm}
+
+\textbf{Key findings.}
+\begin{itemize}
+  \item NSGA-II dominates Pareto coverage (HV, IGD).
+  \item PAES yields the strongest macronutrient solutions (lowest best $f_2$ on average).
+  \item MOPSO is fastest; P-ACO is slow due to pheromone updates.
+\end{itemize}
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Statistical Significance (Paired Replicates)}
+
+\textbf{Friedman aligned ranks (omnibus).}
+\begin{itemize}
+  \item Rejects null across configurations on all metrics ($p < 10^{-70}$).
+\end{itemize}
+
+\vspace{0.25cm}
+
+\textbf{Wilcoxon signed-ranks + multiple-comparison correction.}
+\begin{itemize}
+  \item NSGA-II (both variants) significantly better than PAES/MOPSO/P-ACO on HV.
+  \item NSGA-II encodings: HV difference not significant ($p=0.359$).
+  \item Non-NSGA-II methods: not significantly different from one another on HV after correction.
+\end{itemize}
+
+\vspace{0.25cm}
+
+\textbf{Conclusion.} NSGA-II superiority is statistically supported; encoding choice is secondary.
+
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Results: Hypervolume Boxplots}
 \centering
-\includegraphics[width=0.95\textwidth]{experiments/demo_overview.png}
-\caption{Single-run overview for subject~1: objective space (left), convergence (centre), diversity (right). NSGA-II maintains full 80-point fronts; PAES holds a medium-sized adaptive-grid archive; MOPSO produces a smaller crowding-pruned archive; P-ACO returns a tighter pheromone-reinforced archive. Both NSGA-II penalty and death-penalty are omitted since they overlap exactly with the direct-index repair curve.}
-\label{fig:demo}
-\end{figure}
 
-\begin{figure}[H]
+\includegraphics[width=0.92\linewidth,height=0.78\textheight,keepaspectratio]{experiments/boxplots.png}
+
+\vspace{0.2cm}
+\scriptsize Boxplots across 30 replicates $\times$ 5 subjects ($n=150$ per configuration).
+\end{frame}
+
+%================================================
+\begin{frame}
+\frametitle{Convergence and Diversity Overview}
 \centering
-\includegraphics[width=0.95\textwidth]{experiments/boxplots.png}
-\caption{Per-configuration distributions across 30 replicates $\times$ 5 subjects ($n=150$ per box). Top row: hypervolume, IGD, spacing. Bottom row: best $f_1$, best $f_2$, runtime in seconds. NSGA-II variants dominate hypervolume and IGD; MOPSO is the fastest method; P-ACO is the slowest in the current implementation. {nsga2\_di\_repair} is shown as representative for all three direct-index NSGA-II handlers.}
-\label{fig:boxplots}
-\end{figure}
+\includegraphics[width=0.92\linewidth,height=0.82\textheight,keepaspectratio]{experiments/demo_overview.png}
+\end{frame}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.7\textwidth]{experiments/best_pts_subject_1.png}
-\caption{Cloud of best $(f_1, f_2)$ values per run for subject~1, coloured by configuration (30 points per configuration). NSGA-II variants occupy the strongest calorie-error region, while PAES supplies the strongest macronutrient-error points despite weaker Pareto coverage.}
-\label{fig:bestpts}
-\end{figure}
+%================================================
+\begin{frame}
+\frametitle{Implementation Insights}
 
-\subsection{Discussion}
+\textbf{Feasibility-preserving encoding.}
+\begin{itemize}
+  \item All solutions satisfy per-slot category constraints by construction ($x_j\in D_j$).
+  \item No repair/penalty/death-penalty overhead is needed in the main benchmark.
+\end{itemize}
 
-\paragraph{Random-key NSGA-II is the strongest overall configuration.} Across the full benchmark, {nsga2\_rk\_repair} leads on hypervolume (1{,}059{,}760), IGD (120.20) and best mean $f_1$ (1{,}105.10) while remaining only slightly slower than the fastest NSGA-II variant on runtime (1.46~s vs.\ 1.38~s). The direct-index variant is a close second on HV ($1{,}014{,}630$) and IGD ($171.75$), and the HV gap between the two encodings does not reach statistical significance ($p_{\mathrm{adj}}=0.359$). One possible explanation is that Gaussian perturbations in $[0,1]^{77}$ explore the decoded categorical space more gradually than discrete uniform re-sampling, while equal-width binning still allows a mutation to move between foods within a slot's admissible set.
+\vspace{0.25cm}
 
-\paragraph{Constraint handlers.} The three direct-index handlers ({repair}, {penalty}, {death\_penalty}) produce identical hypervolume, IGD, spacing, $\Delta$-spread and best-objective values across all 150 replicates each. Every pairwise Wilcoxon test between them returns $p_{\mathrm{adj}}=1.0$. The cause is structural rather than statistical: the domain-aware variator cannot produce an infeasible candidate, so the handlers never alter the evaluated fitness. The only measurable cost difference comes from validity checks: {repair} runs in 1.38~s on average, while {penalty} (2.73~s) and {death\_penalty} (2.72~s) pay a roughly $2\times$ overhead because they still invoke {count\_violations} on every individual. This result shows that a feasibility-preserving representation can make explicit constraint handling unnecessary for solution quality, although runtime overhead can remain.
+\textbf{Algorithm performance drivers.}
+\begin{itemize}
+  \item \textbf{NSGA-II:} best overall Pareto coverage via sorting + crowding distance.
+  \item \textbf{PAES:} archive-driven exploitation; strong low-$f_2$ solutions.
+  \item \textbf{MOPSO:} fast continuous dynamics; weaker precision through decoding.
+  \item \textbf{P-ACO:} pheromone learning from archive; competitive but computationally heavy in Python.
+\end{itemize}
 
-\paragraph{PAES is the best per-point macronutrient solver but does not match NSGA-II coverage.} {paes\_di\_repair} records the lowest mean best $f_2$ across all configurations ($123.92$), meaning its archive members are individually closest to the prescribed macronutrient split. However, its hypervolume ($401{,}023$) remains far below the NSGA-II variants and is statistically indistinguishable from MOPSO and P-ACO. This reflects the trade-off of a $(1{+}1)$-ES: single-trajectory search can exploit one region deeply but cannot match the breadth of a population-based method, even with an enlarged generation budget (800).
+\vspace{0.25cm}
 
-\paragraph{Swarm methods diverge mainly on cost.} {mopso\_rk} is the fastest method in the benchmark (mean runtime 0.37~s) and achieves hypervolume similar to PAES ($403{,}726$). {paco\_di} has the highest mean HV among the non-NSGA-II methods ($435{,}310$), but the advantage is not statistically significant and comes with much weaker IGD ($783.09$), spacing ($438.22$) and runtime (33.50~s). This suggests that the current pheromone update loop should be profiled and optimised before drawing stronger conclusions about P-ACO itself.
+\textbf{Takeaway.} The metaheuristic family dominates performance differences more than the encoding choice.
 
-\subsection{Code repository}
+\end{frame}
 
-The full source code, tests and experiment notebook required to reproduce every figure and table is available at: \url{https://github.com/gjorgiandonovski/Multi-objective-Diet-Optimization-Problem}.
+%================================================
+\begin{frame}
+\frametitle{Conclusion}
 
-%==============================================
-% CONCLUSION
-%==============================================
-\section{Conclusion and Future Work}
+\begin{itemize}
+  \item Best overall: NSGA-II (both encodings) for Pareto front coverage.
+  \item Use PAES when the main goal is a very low macronutrient deviation solution (low $f_2$).
+  \item Use MOPSO when runtime is the primary constraint.
+  \item Feasibility-preserving representations simplify optimization and make constraint-handling unnecessary.
+  \item Statistical tests confirm the observed differences are not due to stochastic noise.
+\end{itemize}
 
-This project tackled the multi-objective weekly diet planning problem with two evolutionary algorithms (NSGA-II, PAES), two swarm-intelligence algorithms (MOPSO, P-ACO), two solution encodings (direct-index and random-key) and three constraint-handling strategies (repair, penalty, death-penalty). The full benchmark covers $1{,}050$ runs across seven configurations (30 replicates $\times$ 5 subjects each), evaluated on hypervolume, IGD, Schott's spacing and Deb's $\Delta$-spread.
+\end{frame}
 
-The strongest configuration is {nsga2\_rk\_repair}, with mean hypervolume $1{,}059{,}760$ and IGD $120.20$ at $1.46$~s per run. The direct-index NSGA-II variant is a close second (HV $1{,}014{,}630$, IGD $171.75$, 1.38~s) and the HV gap does not reach statistical significance. PAES delivers the lowest per-plan macronutrient deviation ($f_2 = 123.92$) but remains far below NSGA-II on HV ($401{,}023$); MOPSO is the fastest method (0.37~s); P-ACO has the highest mean HV among the non-NSGA-II methods ($435{,}310$) but weak IGD and the slowest runtime (33.50~s per run).
+%================================================
+\begin{frame}
+\frametitle{References}
 
-The constraint-handler ablation produced a structural finding: because the direct-index variator cannot emit an infeasible candidate, \emph{repair}, \emph{penalty} and \emph{death-penalty} share identical trajectories and identical quality metrics. The only measurable difference is a $\sim$2$\times$ runtime overhead in \emph{penalty}/\emph{death-penalty} from extra validity checks. For this reason, the results use one direct-index NSGA-II quality row plus a separate runtime side-table.
+\small
+\begin{thebibliography}{9}
 
-\subsection*{Future work}
+\bibitem{deb2002nsga2}
+K. Deb, A. Pratap, S. Agarwal, T. Meyarivan.
+\newblock A fast and elitist multiobjective genetic algorithm: NSGA-II.
+\newblock \emph{IEEE Trans. Evol. Comput.}, 6(2):182--197, 2002.
 
-The following directions are \emph{not yet implemented} and represent natural next steps.
+\bibitem{knowles2000paes}
+J. Knowles, D. Corne.
+\newblock Approximating the nondominated front using the Pareto archived evolution strategy.
+\newblock \emph{Evolutionary Computation}, 8(2):149--172, 2000.
 
-\paragraph{1. Unrestricted variator for a meaningful constraint comparison.} The most direct extension is to replace the domain-aware mutation with an operator that can emit infeasible candidates (e.g.\ sampling each gene from the full catalogue rather than from $D_j$). This would let repair, penalty and death-penalty diverge in behaviour, turning the present structural equivalence into a genuine empirical comparison.
+\bibitem{coello2004mopso}
+C. A. C. Coello, G. T. Pulido, M. S. Lechuga.
+\newblock Handling multiple objectives with particle swarm optimization.
+\newblock \emph{IEEE Trans. Evol. Comput.}, 8(3):256--279, 2004.
 
-\paragraph{2. Preference-aware objectives and constraints.} The database provides per-subject preference, dislike and allergy lists that are currently loaded but unused. Incorporating them --- as a soft penalty for disliked foods or a hard exclusion for allergens --- would produce more personalised and practically usable meal plans.
+\bibitem{dorigo1997aco}
+M. Dorigo, L. M. Gambardella.
+\newblock Ant colonies for the travelling salesman problem.
+\newblock \emph{BioSystems}, 43(2):73--81, 1997.
 
-\paragraph{3. Profile and accelerate the P-ACO pheromone loop.} P-ACO reaches competitive non-NSGA-II hypervolume (435{,}310) but has the highest runtime (33.50~s per run) and weak IGD/spacing. This may be caused by an inefficient inner loop in the pheromone update rather than by the algorithm itself; profiling and a vectorised rewrite would clarify this.
+\bibitem{blum2005aco}
+C. Blum.
+\newblock Ant colony optimization: Introduction and recent trends.
+\newblock \emph{Physics of Life Reviews}, 2(4):353--373, 2005.
 
-\paragraph{4. Denser hyperparameter tuning.} The current sweep covers 12--16 cells per algorithm on two of the five subjects. A denser grid on all five subjects would strengthen the conclusions and reduce sensitivity to the tuning sample.
+\bibitem{wilcoxon1945}
+F. Wilcoxon.
+\newblock Individual comparisons by ranking methods.
+\newblock \emph{Biometrics Bulletin}, 1(6):80--83, 1945.
 
-%==============================================
-% REFERENCES
-%==============================================
-\section*{References}
+\bibitem{friedman1937}
+M. Friedman.
+\newblock The use of ranks to avoid the assumption of normality implicit in the analysis of variance.
+\newblock \emph{J. Amer. Statist. Assoc.}, 32(200):675--701, 1937.
 
-\begin{enumerate}[leftmargin=1.6em]
-\item Deb, K., Pratap, A., Agarwal, S., \& Meyarivan, T. (2002). \textit{A fast and elitist multiobjective genetic algorithm: NSGA-II}. IEEE Transactions on Evolutionary Computation, 6(2), 182--197.
-\item Knowles, J., \& Corne, D. (2000). \textit{Approximating the nondominated front using the Pareto archived evolution strategy}. Evolutionary Computation, 8(2), 149--172.
-\item Coello, C. A. C., Pulido, G. T., \& Lechuga, M. S. (2004). \textit{Handling multiple objectives with particle swarm optimization}. IEEE Transactions on Evolutionary Computation, 8(3), 256--279.
-\item Nebro, A. J., Durillo, J. J., Garcia-Nieto, J., Coello Coello, C. A., Luna, F., \& Alba, E. (2009). \textit{SMPSO: A new PSO-based metaheuristic for multi-objective optimization}. IEEE Symposium on Computational Intelligence in Multi-Criteria Decision-Making, 66--73.
-\item Kennedy, J., \& Eberhart, R. (1995). \textit{Particle swarm optimization}. Proceedings of ICNN'95, vol.\ IV, 1942--1948.
-\item Schott, J. R. (1995). \textit{Fault tolerant design using single and multicriteria genetic algorithm optimization}. Master's thesis, Massachusetts Institute of Technology.
-\item Zitzler, E., \& Thiele, L. (1999). \textit{Multiobjective evolutionary algorithms: A comparative case study and the strength Pareto approach}. IEEE Transactions on Evolutionary Computation, 3(4), 257--271.
-\item Friedman, M. (1937). \textit{The use of ranks to avoid the assumption of normality implicit in the analysis of variance}. Journal of the American Statistical Association, 32(200), 675--701.
-\item Wilcoxon, F. (1945). \textit{Individual comparisons by ranking methods}. Biometrics Bulletin, 1(6), 80--83.
-\item Holm, S. (1979). \textit{A simple sequentially rejective multiple test procedure}. Scandinavian Journal of Statistics, 6(2), 65--70.
-\item Shaffer, J. P. (1986). \textit{Modified sequentially rejective multiple test procedures}. Journal of the American Statistical Association, 81(395), 826--831.
-\item Garrett, A. (2012). \textit{Inspyred: Bio-inspired algorithms in Python}. \url{https://aarongarrett.github.io/inspyred/}
-\item Quesada Pajares, J. (2024). \textit{NutritionPlanning: food database and reference scripts for the BAO course}. \url{https://github.com/javierquesadapajares/NutritionPlanning}
-\item Coello, C. A. C., Lamont, G. B., \& Van Veldhuizen, D. A. (2007). \textit{Evolutionary Algorithms for Solving Multi-Objective Problems} (2nd ed.). Springer.
-\end{enumerate}
+\end{thebibliography}
+
+\end{frame}
 
 \end{document}

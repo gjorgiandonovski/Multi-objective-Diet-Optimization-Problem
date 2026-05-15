@@ -35,12 +35,6 @@ diet_bao/
   encoding.py              Slot/domain construction for 77-gene plans.
   fitness.py               f1/f2 fitness definitions.
 
-  constraints/
-    base.py
-    repair.py
-    penalty.py
-    death_penalty.py
-
   representations/
     base.py
     direct_index.py
